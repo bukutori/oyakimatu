@@ -68,6 +68,9 @@ const structures = [
     (style, bg, outfit, action, char, classifier) => `今日挑戰：請用 [${style}] 畫一${classifier}身處 [${bg}] 且 [${outfit}] 的 [${char}] ！`
 ];
 
+// Helper to get random element, keeping the component pure for React 19 linter rules
+const getRandomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
 function InspirationGenerator() {
     const [activeTab, setActiveTab] = useState('text'); // 'text' or 'image'
     
@@ -86,17 +89,17 @@ function InspirationGenerator() {
     const [hoveredEl, setHoveredEl] = useState(null);
 
     const generateTextChallenge = () => {
-        // Randomly pick values
-        const randomStyle = styles[Math.floor(Math.random() * styles.length)];
-        const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
-        const randomOutfit = outfits[Math.floor(Math.random() * outfits.length)];
-        const randomAction = actions[Math.floor(Math.random() * actions.length)];
-        const randomChar = subjects[Math.floor(Math.random() * subjects.length)];
+        // Randomly pick values using module-level pure helpers
+        const randomStyle = getRandomElement(styles);
+        const randomBg = getRandomElement(backgrounds);
+        const randomOutfit = getRandomElement(outfits);
+        const randomAction = getRandomElement(actions);
+        const randomChar = getRandomElement(subjects);
         
         const classifier = getClassifier(randomChar);
 
         // Randomly pick a sentence structure
-        const randomStructure = structures[Math.floor(Math.random() * structures.length)];
+        const randomStructure = getRandomElement(structures);
         const generatedText = randomStructure(randomStyle, randomBg, randomOutfit, randomAction, randomChar, classifier);
         
         setChallengeText(generatedText);

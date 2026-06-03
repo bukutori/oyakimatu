@@ -1,7 +1,7 @@
-import React from 'react';
 import SketchWall from './SketchWall';
 import InspirationGenerator from './InspirationGenerator';
 import ColorPalette from './ColorPalette';
+import ImageBrowser from './ImageBrowser';
 
 function App() {
   return (
@@ -28,6 +28,7 @@ function App() {
         <SketchWall />
         <InspirationGenerator />
         <ColorPalette />
+        <ImageBrowser />
       </div>
     </div>
   );

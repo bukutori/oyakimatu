@@ -22,6 +22,7 @@ const fs       = require('fs');
 const path     = require('path');
 
 const { verifyToken, JWT_SECRET } = require('../middleware/auth');
+const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
 
@@ -36,6 +37,106 @@ function readUsersDB() {
         return [];
     }
 }
+
+// ─────────────────────────────────────────────────
+// POST /api/auth/register
+// Body: { username: string, email: string, password: string, displayName: string }
+// ─────────────────────────────────────────────────
+router.post('/register', async (req, res) => {
+    try {
+        const { username, email, password, displayName } = req.body;
+
+        // 1. 基本欄位驗證
+        if (!username || !email || !password || !displayName) {
+            return res.status(400).json({
+                success: false,
+                message: '請填寫所有欄位',
+            });
+        }
+
+        // 2. 讀取現有用戶資料
+        const users = readUsersDB();
+
+        // 3. 檢查 email 是否已被註冊
+        const existingUser = users.find(u => u.email === email.toLowerCase().trim());
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                message: '此 Email 已被註冊',
+            });
+        }
+
+        // 4. 檢查 username 是否已被使用
+        const existingUsername = users.find(u => u.username === username.toLowerCase().trim());
+        if (existingUsername) {
+            return res.status(409).json({
+                success: false,
+                message: '此使用者名稱已被使用',
+            });
+        }
+
+        // 5. 密碼加密
+        const bcrypt = require('bcryptjs');
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        // 6. 建立新用戶
+        const newUser = {
+            id: `usr_${uuidv4()}`,
+            username: username.toLowerCase().trim(),
+            email: email.toLowerCase().trim(),
+            passwordHash,
+            displayName: displayName.trim(),
+            avatarUrl: '',
+            role: 'user',
+            createdAt: new Date().toISOString(),
+        };
+
+        // 7. 寫入 users.json
+        users.push(newUser);
+        fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2), 'utf-8');
+
+        // 8. 初始化該用戶的收藏資料夾
+        const FAVORITES_PATH = path.join(__dirname, '../data/favorites.json');
+        const favoritesDB = JSON.parse(fs.readFileSync(FAVORITES_PATH, 'utf-8'));
+        favoritesDB[newUser.id] = [];
+        fs.writeFileSync(FAVORITES_PATH, JSON.stringify(favoritesDB, null, 2), 'utf-8');
+
+        // 9. 簽發 JWT
+        const payload = {
+            id: newUser.id,
+            username: newUser.username,
+            role: newUser.role,
+        };
+        const token = jwt.sign(payload, JWT_SECRET, {
+            expiresIn: '7d',
+        });
+
+        // 10. 回傳 token 與用戶資料
+        const safeUser = {
+            id: newUser.id,
+            username: newUser.username,
+            email: newUser.email,
+            displayName: newUser.displayName,
+            avatarUrl: newUser.avatarUrl,
+            role: newUser.role,
+            createdAt: newUser.createdAt,
+        };
+
+        return res.status(201).json({
+            success: true,
+            message: '註冊成功',
+            token,
+            user: safeUser,
+        });
+
+    } catch (err) {
+        console.error('[POST /api/auth/register] Error:', err);
+        return res.status(500).json({
+            success: false,
+            message: '伺服器發生錯誤，請稍後再試',
+        });
+    }
+});
 
 // ─────────────────────────────────────────────────
 // POST /api/auth/login

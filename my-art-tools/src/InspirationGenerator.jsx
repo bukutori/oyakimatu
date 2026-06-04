@@ -1,5 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+
+// Theme colors
+const THEMES = {
+  dark: {
+    background: '#0f0f0f',
+    text: '#e0e0e0',
+    cardBg: '#1a1a1a',
+    border: 'rgba(255,255,255,0.07)',
+  },
+  light: {
+    background: '#f5f5f5',
+    text: '#111111',
+    cardBg: '#ffffff',
+    border: 'rgba(0,0,0,0.08)',
+  },
+};
 
 // Large Database (20 items per category)
 const subjects = [
@@ -93,8 +109,9 @@ const structures = [
 // Helper to get random element, keeping the component pure for React 19 linter rules
 const getRandomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-function InspirationGenerator() {
+function InspirationGenerator({ theme = 'dark' }) {
     const [activeTab, setActiveTab] = useState('text'); // 'text' or 'image'
+    const currentTheme = THEMES[theme] || THEMES.dark;
 
     // Text challenge state
     const [challengeText, setChallengeText] = useState(null);
@@ -106,9 +123,32 @@ function InspirationGenerator() {
     // Image challenge state
     const [imageUrl, setImageUrl] = useState('');
     const [imageLoading, setImageLoading] = useState(false);
+    const [imagePool, setImagePool] = useState([]);
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [showImageModal, setShowImageModal] = useState(false);
 
     // Hover states for premium micro-animations
     const [hoveredEl, setHoveredEl] = useState(null);
+
+    // ── 初始化載入圖片池 ─────────────────────────────
+    useEffect(() => {
+        const fetchImagePool = async () => {
+            try {
+                console.log('[InspirationGenerator] Fetching image pool from backend...');
+                const response = await axios.get(
+                    'http://localhost:5000/api/images?category=動作參考&per_page=30'
+                );
+                if (response.data.success && Array.isArray(response.data.images)) {
+                    setImagePool(response.data.images);
+                    console.log(`[InspirationGenerator] Loaded ${response.data.images.length} images into pool`);
+                }
+            } catch (error) {
+                console.error('[InspirationGenerator] Error fetching image pool:', error);
+            }
+        };
+
+        fetchImagePool();
+    }, []);
 
     const generateTextChallenge = () => {
         // Randomly pick values using module-level pure helpers
@@ -169,9 +209,31 @@ function InspirationGenerator() {
     };
 
     const generateImageChallenge = () => {
+        if (imagePool.length === 0) {
+            console.warn('[InspirationGenerator] Image pool is empty, cannot draw');
+            return;
+        }
+
+        setIsDrawing(true);
         setImageLoading(true);
-        const randomId = Math.floor(Math.random() * 100000);
-        setImageUrl(`https://picsum.photos/400/300?random=${randomId}`);
+
+        // 隨機切換動畫效果：快速切換多張圖片後停下
+        let shuffleCount = 0;
+        const maxShuffles = 8;
+        const shuffleInterval = setInterval(() => {
+            const randomImage = imagePool[Math.floor(Math.random() * imagePool.length)];
+            setImageUrl(randomImage.url);
+            shuffleCount++;
+
+            if (shuffleCount >= maxShuffles) {
+                clearInterval(shuffleInterval);
+                // 最後選定一張圖片
+                const finalImage = imagePool[Math.floor(Math.random() * imagePool.length)];
+                setImageUrl(finalImage.url);
+                setImageLoading(false);
+                setIsDrawing(false);
+            }
+        }, 100);
     };
 
     // Color code and format elements inside [brackets]
@@ -216,12 +278,12 @@ function InspirationGenerator() {
 
     // Style constants
     const cardStyle = {
-        backgroundColor: '#1e1e1e',
+        backgroundColor: currentTheme.cardBg,
         borderRadius: '16px',
         padding: '28px',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        color: '#f3f4f6',
+        border: `1px solid ${currentTheme.border}`,
+        color: currentTheme.text,
         maxWidth: '500px',
         margin: '0 auto',
         fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -247,24 +309,25 @@ function InspirationGenerator() {
 
     const tabContainerStyle = {
         display: 'flex',
-        backgroundColor: '#121212',
+        backgroundColor: currentTheme.cardBg,
         padding: '4px',
         borderRadius: '12px',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
+        border: `1px solid ${currentTheme.border}`,
     };
 
     const getTabStyle = (tabName) => {
         const isActive = activeTab === tabName;
         const isHovered = hoveredEl === `tab-${tabName}`;
+        const isLight = theme === 'light';
         return {
             flex: 1,
             padding: '10px 16px',
             border: 'none',
             borderRadius: '8px',
-            backgroundColor: isActive ? '#2a2a2a' : 'transparent',
+            backgroundColor: isActive ? (isLight ? 'rgba(59, 130, 246, 0.15)' : 'rgba(167, 139, 250, 0.2)') : 'transparent',
             color: isActive
-                ? '#a78bfa'
-                : (isHovered ? '#e0e0e0' : '#8c8c8c'),
+                ? (isLight ? '#3b82f6' : '#a78bfa')
+                : (isHovered ? currentTheme.text : (isLight ? '#6b7280' : '#8c8c8c')),
             cursor: 'pointer',
             fontWeight: '600',
             fontSize: '0.95rem',
@@ -285,10 +348,10 @@ function InspirationGenerator() {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#151515',
+        backgroundColor: currentTheme.cardBg,
         borderRadius: '12px',
         padding: '24px 20px',
-        border: '1px dashed rgba(255, 255, 255, 0.1)',
+        border: `1px dashed ${currentTheme.border}`,
         position: 'relative',
         overflow: 'hidden',
     };
@@ -312,13 +375,15 @@ function InspirationGenerator() {
             color: '#ffffff',
             fontWeight: 'bold',
             fontSize: '1rem',
-            cursor: 'pointer',
+            cursor: isDrawing ? 'default' : 'pointer',
             transition: 'all 0.2s ease',
-            boxShadow: isHovered
-                ? `0 6px 20px ${shadowColor}`
-                : `0 4px 12px ${shadowColor}`,
-            transform: isHovered ? 'translateY(-2px)' : 'none',
+            boxShadow: isDrawing
+                ? `0 4px 12px ${shadowColor}`
+                : (isHovered ? `0 6px 20px ${shadowColor}` : `0 4px 12px ${shadowColor}`),
+            transform: isDrawing ? 'none' : (isHovered ? 'translateY(-2px)' : 'none'),
             outline: 'none',
+            position: 'relative',
+            overflow: 'hidden',
         };
     };
 
@@ -365,10 +430,10 @@ function InspirationGenerator() {
                 {activeTab === 'text' ? (
                     challengeText ? (
                         <div style={{ textAlign: 'center', animation: 'fadeIn 0.4s ease-out', width: '100%' }}>
-                            <p style={{ color: '#888', fontSize: '0.85rem', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+                            <p style={{ color: currentTheme.text === '#e0e0e0' ? '#888' : '#6b7280', fontSize: '0.85rem', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
                                 🎲 隨機繪畫挑戰
                             </p>
-                            <h4 style={{ fontSize: '1.1rem', lineHeight: '1.75', margin: '0', fontWeight: '500', color: '#f3f4f6' }}>
+                            <h4 style={{ fontSize: '1.1rem', lineHeight: '1.75', margin: '0', fontWeight: '500', color: currentTheme.text }}>
                                 {formatChallengeText(challengeText)}
                             </h4>
 
@@ -376,7 +441,7 @@ function InspirationGenerator() {
                             <div style={{
                                 marginTop: '20px',
                                 paddingTop: '16px',
-                                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                                borderTop: `1px solid ${currentTheme.border}`,
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
@@ -384,11 +449,11 @@ function InspirationGenerator() {
                                 justifyContent: 'center'
                             }}>
                                 {quoteLoading ? (
-                                    <span style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic' }}>🔮 正在捕捉共鳴意境...</span>
+                                    <span style={{ fontSize: '0.85rem', color: currentTheme.text === '#e0e0e0' ? '#666' : '#6b7280', fontStyle: 'italic' }}>🔮 正在捕捉共鳴意境...</span>
                                 ) : (
                                     quote && (
                                         <div style={{ animation: 'fadeIn 0.3s ease' }}>
-                                            <p style={{ margin: '0 0 6px 0', fontSize: '0.9rem', color: '#a0a0a0', fontStyle: 'italic', lineHeight: '1.5' }}>
+                                            <p style={{ margin: '0 0 6px 0', fontSize: '0.9rem', color: currentTheme.text === '#e0e0e0' ? '#a0a0a0' : '#6b7280', fontStyle: 'italic', lineHeight: '1.5' }}>
                                                 「 {quote.text} 」
                                             </p>
                                             <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 'bold' }}>
@@ -400,9 +465,9 @@ function InspirationGenerator() {
                             </div>
                         </div>
                     ) : (
-                        <div style={{ textAlign: 'center', color: '#666' }}>
+                        <div style={{ textAlign: 'center', color: currentTheme.text === '#e0e0e0' ? '#666' : '#6b7280' }}>
                             <span style={{ fontSize: '2rem', display: 'block', marginBottom: '10px' }}>⚡</span>
-                            <p style={{ margin: '0', fontSize: '0.95rem' }}>點擊下方按鈕，召喚你的創作靈感！</p>
+                            <p style={{ margin: '0', fontSize: '0.95rem', color: currentTheme.text }}>點擊下方按鈕，召喚你的創作靈感！</p>
                         </div>
                     )
                 ) : (
@@ -428,6 +493,7 @@ function InspirationGenerator() {
                                 src={imageUrl}
                                 alt="Inspiration"
                                 onLoad={() => setImageLoading(false)}
+                                onClick={() => setShowImageModal(true)}
                                 style={{
                                     maxWidth: '100%',
                                     maxHeight: '220px',
@@ -435,9 +501,15 @@ function InspirationGenerator() {
                                     objectFit: 'cover',
                                     boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                                     opacity: imageLoading ? 0.3 : 1,
-                                    transition: 'opacity 0.3s ease',
+                                    transition: 'opacity 0.3s ease, transform 0.2s ease',
+                                    cursor: 'pointer',
                                 }}
+                                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+                                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                             />
+                            <span style={{ fontSize: '0.75rem', color: currentTheme.text === '#e0e0e0' ? '#666' : '#6b7280', marginTop: '8px' }}>
+                                點擊圖片放大查看
+                            </span>
                         </div>
                     ) : (
                         <div style={{ textAlign: 'center', color: '#666' }}>
@@ -454,9 +526,85 @@ function InspirationGenerator() {
                 onClick={activeTab === 'text' ? generateTextChallenge : generateImageChallenge}
                 onMouseEnter={() => setHoveredEl('action-btn')}
                 onMouseLeave={() => setHoveredEl(null)}
+                disabled={activeTab === 'image' && isDrawing}
             >
-                {activeTab === 'text' ? '🎲 召喚隨機挑戰' : '🌌 抽一張靈感圖'}
+                {activeTab === 'text' ? '🎲 召喚隨機挑戰' : (isDrawing ? '🎰 抽籤中...' : '🌌 抽一張靈感圖')}
             </button>
+
+            {/* Image Modal */}
+            {showImageModal && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.92)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                        padding: '20px',
+                        backdropFilter: 'blur(8px)',
+                        animation: 'fadeIn 0.2s ease',
+                    }}
+                    onClick={() => setShowImageModal(false)}
+                >
+                    <div
+                        style={{
+                            position: 'relative',
+                            maxWidth: '90vw',
+                            maxHeight: '90vh',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowImageModal(false)}
+                            style={{
+                                position: 'absolute',
+                                top: '-40px',
+                                right: '0',
+                                background: 'none',
+                                border: 'none',
+                                color: '#fff',
+                                fontSize: '2rem',
+                                cursor: 'pointer',
+                                padding: '8px',
+                                lineHeight: '1',
+                                transition: 'color 0.2s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.color = '#a78bfa'}
+                            onMouseLeave={e => e.currentTarget.style.color = '#fff'}
+                        >
+                            ✕
+                        </button>
+
+                        {/* Enlarged Image */}
+                        <img
+                            src={imageUrl}
+                            alt="Enlarged Inspiration"
+                            style={{
+                                maxWidth: '100%',
+                                maxHeight: '85vh',
+                                borderRadius: '12px',
+                                objectFit: 'contain',
+                                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
+                            }}
+                        />
+
+                        {/* Hint */}
+                        <span style={{
+                            color: '#888',
+                            fontSize: '0.85rem',
+                            marginTop: '12px',
+                        }}>
+                            點擊背景或右上角 ✕ 關閉
+                        </span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

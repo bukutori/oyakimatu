@@ -1,5 +1,29 @@
 {
   "_comment": "key 為 userId，value 為該用戶的收藏陣列。對接 MongoDB 時，此結構對應 favorites collection。",
-  "usr_001": [],
-  "usr_002": []
+  "usr_001": [
+    {
+      "id": "25",
+      "author": "Alejandro Escamilla",
+      "url": "https://picsum.photos/id/25/600/450",
+      "isCustom": false,
+      "savedAt": 1780560529734
+    }
+  ],
+  "usr_002": [],
+  "usr_8eee3a2f-a7ce-43ab-af17-aef137911f6a": [
+    {
+      "id": "LR1mSXMQ7AE",
+      "author": "Puneet Kumar",
+      "url": "https://picsum.photos/id/LR1mSXMQ7AE/600/450",
+      "isCustom": false,
+      "savedAt": 1780582773982
+    },
+    {
+      "id": "f4zjli1ML_w",
+      "author": "gaspar zaldo",
+      "url": "https://picsum.photos/id/f4zjli1ML_w/600/450",
+      "isCustom": false,
+      "savedAt": 1780582775116
+    }
+  ]
 }

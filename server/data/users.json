@@ -3,7 +3,7 @@
     "id": "usr_001",
     "username": "artist01",
     "email": "artist01@example.com",
-    "passwordHash": "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
+    "passwordHash": "$2a$10$mE7fAyOyLWqKrNMWFhbhy.GYIU5W3qPsxDihr6EMHs9eMqE8banLC",
     "displayName": "繪師小花",
     "avatarUrl": "",
     "role": "user",
@@ -13,10 +13,20 @@
     "id": "usr_002",
     "username": "admin",
     "email": "admin@example.com",
-    "passwordHash": "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
+    "passwordHash": "$2a$10$mE7fAyOyLWqKrNMWFhbhy.GYIU5W3qPsxDihr6EMHs9eMqE8banLC",
     "displayName": "管理員",
     "avatarUrl": "",
     "role": "admin",
     "createdAt": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "usr_8eee3a2f-a7ce-43ab-af17-aef137911f6a",
+    "username": "bukutori",
+    "email": "cww97210@gmail.com",
+    "passwordHash": "$2a$10$ReD4OilyJcRzkn0i21MJZOlMhDvIm/rVA2T9V7zrM6LPoCxIiXCsS",
+    "displayName": "不穀鳥",
+    "avatarUrl": "",
+    "role": "user",
+    "createdAt": "2026-06-04T09:54:30.459Z"
   }
 ]

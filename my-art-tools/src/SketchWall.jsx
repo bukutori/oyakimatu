@@ -1,11 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
+// Theme colors
+const THEMES = {
+  dark: {
+    background: '#0f0f0f',
+    text: '#e0e0e0',
+    cardBg: '#1a1a1a',
+    border: 'rgba(255,255,255,0.07)',
+  },
+  light: {
+    background: '#f5f5f5',
+    text: '#111111',
+    cardBg: '#ffffff',
+    border: 'rgba(0,0,0,0.08)',
+  },
+};
+
 // Helper functions defined outside the component to preserve React purity
 const getRandomPage = () => Math.floor(Math.random() * 80) + 1;
 const getRandomIndex = (length) => Math.floor(Math.random() * length);
 
-function SketchWall({ savedImages = [], toggleFavorite }) {
+function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
+    const currentTheme = THEMES[theme] || THEMES.dark;
+    const isLight = theme === 'light';
     const [duration, setDuration] = useState(30); // 30s or 60s
     const [timeLeft, setTimeLeft] = useState(30);
     const [isActive, setIsActive] = useState(false); // timer state (Play/Pause) - 預設不自動計時
@@ -14,6 +32,7 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
     const [error, setError] = useState(null);
     const [fitMode, setFitMode] = useState('contain'); // 'contain' or 'cover'
     const [hoveredEl, setHoveredEl] = useState(null);
+    const [showImageModal, setShowImageModal] = useState(false);
 
     // Practice Mode: 'random' (system gallery) or 'custom' (user custom images)
     const [practiceMode, setPracticeMode] = useState('random');
@@ -169,12 +188,12 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
 
     // Style constants
     const cardStyle = {
-        backgroundColor: '#1e1e1e',
+        backgroundColor: currentTheme.cardBg,
         borderRadius: '16px',
         padding: '28px',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        color: '#f3f4f6',
+        border: `1px solid ${currentTheme.border}`,
+        color: currentTheme.text,
         maxWidth: '500px',
         margin: '0 auto',
         fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -188,7 +207,7 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
         fontWeight: 'bold',
         textAlign: 'center',
         margin: '0 0 5px 0',
-        background: 'linear-gradient(135deg, #f43f5e, #fb7185)',
+        background: isLight ? 'linear-gradient(135deg, #3b82f6, #60a5fa)' : 'linear-gradient(135deg, #f43f5e, #fb7185)',
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
         display: 'flex',
@@ -199,10 +218,10 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
 
     const modeContainerStyle = {
         display: 'flex',
-        backgroundColor: '#121212',
+        backgroundColor: currentTheme.cardBg,
         padding: '4px',
         borderRadius: '10px',
-        border: '1px solid rgba(255, 255, 255, 0.03)',
+        border: `1px solid ${currentTheme.border}`,
     };
 
     const getModeBtnStyle = (mode) => {
@@ -213,8 +232,8 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
             padding: '8px 0',
             border: 'none',
             borderRadius: '8px',
-            backgroundColor: isActiveMode ? '#2a2a2a' : 'transparent',
-            color: isActiveMode ? '#fb7185' : (isHovered ? '#e0e0e0' : '#8c8c8c'),
+            backgroundColor: isActiveMode ? (isLight ? 'rgba(59, 130, 246, 0.15)' : 'rgba(251, 113, 133, 0.2)') : 'transparent',
+            color: isActiveMode ? (isLight ? '#3b82f6' : '#fb7185') : (isHovered ? currentTheme.text : (isLight ? '#6b7280' : '#8c8c8c')),
             fontWeight: 'bold',
             fontSize: '0.88rem',
             cursor: 'pointer',
@@ -230,18 +249,18 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '16px',
-        backgroundColor: '#121212',
+        backgroundColor: currentTheme.cardBg,
         borderRadius: '12px',
         position: 'relative',
         overflow: 'hidden',
-        border: '1px solid rgba(255, 255, 255, 0.03)',
+        border: `1px solid ${currentTheme.border}`,
     };
 
     const timerNumStyle = {
         fontSize: '3rem',
         fontWeight: 'bold',
         fontFamily: 'monospace',
-        color: timeLeft <= 5 ? '#f43f5e' : '#fb7185',
+        color: timeLeft <= 5 ? '#f43f5e' : (isLight ? '#3b82f6' : '#fb7185'),
         textShadow: timeLeft <= 5 ? '0 0 16px rgba(244, 63, 90, 0.6)' : 'none',
         lineHeight: 1,
     };
@@ -252,7 +271,7 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
         left: 0,
         height: '4px',
         width: `${(timeLeft / duration) * 100}%`,
-        backgroundColor: timeLeft <= 5 ? '#f43f5e' : '#fb7185',
+        backgroundColor: timeLeft <= 5 ? '#f43f5e' : (isLight ? '#3b82f6' : '#fb7185'),
         transition: 'width 1s linear, background-color 0.2s',
         boxShadow: timeLeft <= 5 ? '0 0 8px #f43f5e' : 'none',
     };
@@ -269,26 +288,26 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
         return {
             padding: '6px 12px',
             borderRadius: '8px',
-            border: isSelected ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
+            border: isSelected ? 'none' : `1px solid ${currentTheme.border}`,
             backgroundColor: isSelected
-                ? '#fb7185'
-                : (isHovered ? '#2a2a2a' : '#121212'),
-            color: isSelected ? '#ffffff' : (isHovered ? '#e0e0e0' : '#8c8c8c'),
+                ? (isLight ? '#3b82f6' : '#fb7185')
+                : (isHovered ? currentTheme.cardBg : currentTheme.cardBg),
+            color: isSelected ? '#ffffff' : (isHovered ? currentTheme.text : (isLight ? '#6b7280' : '#8c8c8c')),
             fontWeight: 'bold',
             fontSize: '0.85rem',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             outline: 'none',
-            boxShadow: isSelected ? '0 4px 12px rgba(251, 113, 133, 0.3)' : 'none',
+            boxShadow: isSelected ? (isLight ? '0 4px 12px rgba(59, 130, 246, 0.3)' : '0 4px 12px rgba(251, 113, 133, 0.3)') : 'none',
         };
     };
 
     const imageAreaStyle = {
         width: '100%',
         height: '300px',
-        backgroundColor: '#151515',
+        backgroundColor: currentTheme.cardBg,
         borderRadius: '12px',
-        border: '1px dashed rgba(255, 255, 255, 0.1)',
+        border: `1px dashed ${currentTheme.border}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -319,16 +338,16 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
 
     const getControlBtnStyle = (type) => {
         const isHovered = hoveredEl === `ctrl-${type}`;
-        let bg = '#121212';
-        let border = '1px solid rgba(255, 255, 255, 0.1)';
-        let color = '#a0a0a0';
+        let bg = currentTheme.cardBg;
+        let border = `1px solid ${currentTheme.border}`;
+        let color = isLight ? '#6b7280' : '#a0a0a0';
 
         if (type === 'play-pause') {
-            bg = isActive ? 'rgba(251, 113, 133, 0.15)' : 'rgba(52, 211, 153, 0.15)';
-            border = isActive ? '1px solid #fb7185' : '1px solid #34d399';
-            color = isActive ? '#fb7185' : '#34d399';
+            bg = isActive ? (isLight ? 'rgba(59, 130, 246, 0.15)' : 'rgba(251, 113, 133, 0.15)') : (isLight ? 'rgba(52, 211, 153, 0.15)' : 'rgba(52, 211, 153, 0.15)');
+            border = isActive ? (isLight ? '1px solid #3b82f6' : '1px solid #fb7185') : (isLight ? '1px solid #34d399' : '1px solid #34d399');
+            color = isActive ? (isLight ? '#3b82f6' : '#fb7185') : '#34d399';
         } else if (type === 'skip') {
-            bg = 'linear-gradient(135deg, #f43f5e, #fb7185)';
+            bg = isLight ? 'linear-gradient(135deg, #3b82f6, #60a5fa)' : 'linear-gradient(135deg, #f43f5e, #fb7185)';
             border = 'none';
             color = '#ffffff';
         }
@@ -345,16 +364,16 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             transform: isHovered ? 'translateY(-1px)' : 'none',
-            boxShadow: isHovered && type === 'skip' ? '0 4px 12px rgba(251, 113, 133, 0.4)' : 'none',
+            boxShadow: isHovered && type === 'skip' ? (isLight ? '0 4px 12px rgba(59, 130, 246, 0.4)' : '0 4px 12px rgba(251, 113, 133, 0.4)') : 'none',
             outline: 'none',
         };
     };
 
     const customInputAreaStyle = {
-        backgroundColor: '#151515',
+        backgroundColor: currentTheme.cardBg,
         borderRadius: '12px',
         padding: '14px',
-        border: '1px solid rgba(255, 255, 255, 0.04)',
+        border: `1px solid ${currentTheme.border}`,
         display: 'flex',
         flexDirection: 'column',
         gap: '10px',
@@ -371,6 +390,10 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
                 @keyframes pulse {
                     0%, 100% { opacity: 0.6; }
                     50% { opacity: 1; }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(8px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
             `}</style>
 
@@ -421,9 +444,9 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
             {/* Glowing Timer Display */}
             <div style={timerAreaStyle}>
                 <span style={timerNumStyle}>
-                    {timeLeft} <span style={{ fontSize: '1rem', color: '#666' }}>S</span>
+                    {timeLeft} <span style={{ fontSize: '1rem', color: isLight ? '#6b7280' : '#666' }}>S</span>
                 </span>
-                <span style={{ fontSize: '0.75rem', color: '#888', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                <span style={{ fontSize: '0.75rem', color: isLight ? '#6b7280' : '#888', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
                     {isActive ? '⏳ 計時中' : '⏸️ 已暫停'}
                 </span>
                 {/* Horizontal Progress Bar */}
@@ -433,10 +456,10 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
             {/* Reference Image Canvas */}
             <div style={imageAreaStyle}>
                 {practiceMode === 'custom' && customImages.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: '#666', padding: '20px' }}>
+                    <div style={{ textAlign: 'center', color: isLight ? '#6b7280' : '#666', padding: '20px' }}>
                         <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '10px' }}>📁</span>
-                        <p style={{ margin: '0 0 6px 0', fontSize: '0.95rem', color: '#8c8c8c' }}>尚未載入自訂圖片</p>
-                        <p style={{ margin: '0', fontSize: '0.8rem', color: '#555' }}>請在下方上傳本地圖片或貼上網址</p>
+                        <p style={{ margin: '0 0 6px 0', fontSize: '0.95rem', color: isLight ? '#6b7280' : '#8c8c8c' }}>尚未載入自訂圖片</p>
+                        <p style={{ margin: '0', fontSize: '0.8rem', color: isLight ? '#6b7280' : '#555' }}>請在下方上傳本地圖片或貼上網址</p>
                     </div>
                 ) : loading ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -448,7 +471,7 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
                         }}>🎨</span>
                         <span style={{
                             fontSize: '0.88rem',
-                            color: '#fb7185',
+                            color: isLight ? '#3b82f6' : '#fb7185',
                             animation: 'pulse 1.5s infinite ease-in-out'
                         }}>
                             網頁畫布準備中...
@@ -491,7 +514,7 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
                                         top: '10px',
                                         left: '10px',
                                         backgroundColor: 'rgba(0, 0, 0, 0.65)',
-                                        color: savedImages.some(item => String(item.id) === String(currentImage.id)) ? '#fb7185' : '#ffffff',
+                                        color: savedImages.some(item => String(item.id) === String(currentImage.id)) ? (isLight ? '#3b82f6' : '#fb7185') : '#ffffff',
                                         border: '1px solid rgba(255, 255, 255, 0.1)',
                                         borderRadius: '50%',
                                         width: '30px',
@@ -521,12 +544,16 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
                             <img
                                 src={currentImage.url}
                                 alt={currentImage.author}
+                                onClick={() => setShowImageModal(true)}
                                 style={{
                                     maxWidth: '100%',
                                     maxHeight: '100%',
                                     objectFit: fitMode,
-                                    transition: 'object-fit 0.3s ease',
+                                    transition: 'object-fit 0.3s ease, transform 0.2s ease',
+                                    cursor: 'pointer',
                                 }}
+                                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+                                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                             />
                             {/* Credit Tag overlay */}
                             <div style={{
@@ -560,10 +587,10 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
                 <div style={customInputAreaStyle}>
                     <label style={{
                         padding: '10px 14px',
-                        backgroundColor: '#1c1c1c',
-                        border: '1px dashed rgba(251, 113, 133, 0.4)',
+                        backgroundColor: currentTheme.cardBg,
+                        border: isLight ? '1px dashed rgba(59, 130, 246, 0.4)' : '1px dashed rgba(251, 113, 133, 0.4)',
                         borderRadius: '8px',
-                        color: '#fb7185',
+                        color: isLight ? '#3b82f6' : '#fb7185',
                         fontSize: '0.85rem',
                         cursor: 'pointer',
                         textAlign: 'center',
@@ -594,9 +621,9 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
                                 flex: 1,
                                 padding: '8px 12px',
                                 borderRadius: '8px',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                backgroundColor: '#121212',
-                                color: '#ffffff',
+                                border: `1px solid ${currentTheme.border}`,
+                                backgroundColor: currentTheme.cardBg,
+                                color: currentTheme.text,
                                 fontSize: '0.85rem',
                                 outline: 'none',
                             }}
@@ -607,7 +634,7 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
                                 padding: '8px 16px',
                                 borderRadius: '8px',
                                 border: 'none',
-                                backgroundColor: '#fb7185',
+                                backgroundColor: isLight ? '#3b82f6' : '#fb7185',
                                 color: '#ffffff',
                                 fontWeight: 'bold',
                                 fontSize: '0.85rem',
@@ -648,6 +675,81 @@ function SketchWall({ savedImages = [], toggleFavorite }) {
                     ⏩ 下一張 (Skip)
                 </button>
             </div>
+
+            {/* Image Modal */}
+            {showImageModal && currentImage && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.92)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                        padding: '20px',
+                        backdropFilter: 'blur(8px)',
+                        animation: 'fadeIn 0.2s ease',
+                    }}
+                    onClick={() => setShowImageModal(false)}
+                >
+                    <div
+                        style={{
+                            position: 'relative',
+                            maxWidth: '90vw',
+                            maxHeight: '90vh',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowImageModal(false)}
+                            style={{
+                                position: 'absolute',
+                                top: '-40px',
+                                right: '0',
+                                background: 'none',
+                                border: 'none',
+                                color: '#fff',
+                                fontSize: '2rem',
+                                cursor: 'pointer',
+                                padding: '8px',
+                                lineHeight: '1',
+                                transition: 'color 0.2s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.color = isLight ? '#3b82f6' : '#fb7185'}
+                            onMouseLeave={e => e.currentTarget.style.color = '#fff'}
+                        >
+                            ✕
+                        </button>
+
+                        {/* Enlarged Image */}
+                        <img
+                            src={currentImage.url}
+                            alt={currentImage.author}
+                            style={{
+                                maxWidth: '100%',
+                                maxHeight: '85vh',
+                                borderRadius: '12px',
+                                objectFit: 'contain',
+                                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
+                            }}
+                        />
+
+                        {/* Hint */}
+                        <span style={{
+                            color: '#888',
+                            fontSize: '0.85rem',
+                            marginTop: '12px',
+                        }}>
+                            點擊背景或右上角 ✕ 關閉
+                        </span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

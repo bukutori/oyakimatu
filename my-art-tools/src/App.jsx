@@ -220,7 +220,7 @@ function App() {
               color: '#fff',
               letterSpacing: '-0.5px',
             }}>
-              畫師工具箱
+              今天畫什麼？
             </span>
           </div>
 

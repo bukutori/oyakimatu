@@ -77,20 +77,24 @@ h1 {
   font-size: 56px;
   letter-spacing: -1.68px;
   margin: 32px 0;
+
   @media (max-width: 1024px) {
     font-size: 36px;
     margin: 20px 0;
   }
 }
+
 h2 {
   font-size: 24px;
   line-height: 118%;
   letter-spacing: -0.24px;
   margin: 0 0 8px;
+
   @media (max-width: 1024px) {
     font-size: 20px;
   }
 }
+
 p {
   margin: 0;
 }
@@ -108,4 +112,79 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+/* 儀表板三欄式與響應式排版 */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr 380px;
+  gap: 24px;
+  align-items: start;
+  max-width: 100%;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.db-left {
+  order: 1;
+}
+
+.db-center {
+  order: 2;
+}
+
+.db-right {
+  order: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 1300px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1.3fr;
+  }
+
+  .db-center {
+    grid-column: span 2;
+    order: 1;
+  }
+
+  .db-left {
+    grid-column: 1;
+    order: 2;
+  }
+
+  .db-right {
+    grid-column: 2;
+    order: 3;
+    flex-direction: row;
+  }
+
+  .db-right>* {
+    flex: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .db-center {
+    grid-column: span 1;
+    order: 1;
+  }
+
+  .db-left {
+    grid-column: 1;
+    order: 2;
+  }
+
+  .db-right {
+    grid-column: 1;
+    order: 3;
+    flex-direction: column;
+  }
 }

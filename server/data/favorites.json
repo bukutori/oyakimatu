@@ -1,0 +1,5 @@
+{
+  "_comment": "key 為 userId，value 為該用戶的收藏陣列。對接 MongoDB 時，此結構對應 favorites collection。",
+  "usr_001": [],
+  "usr_002": []
+}

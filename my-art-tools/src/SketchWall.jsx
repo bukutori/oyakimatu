@@ -5,10 +5,10 @@ import axios from 'axios';
 const getRandomPage = () => Math.floor(Math.random() * 80) + 1;
 const getRandomIndex = (length) => Math.floor(Math.random() * length);
 
-function SketchWall() {
+function SketchWall({ savedImages = [], toggleFavorite }) {
     const [duration, setDuration] = useState(30); // 30s or 60s
     const [timeLeft, setTimeLeft] = useState(30);
-    const [isActive, setIsActive] = useState(true); // timer state (Play/Pause)
+    const [isActive, setIsActive] = useState(false); // timer state (Play/Pause) - 預設不自動計時
     const [currentImage, setCurrentImage] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -109,7 +109,7 @@ function SketchWall() {
             setLoading(false);
             setError(null);
             setTimeLeft(duration);
-            setIsActive(true);
+            // 不再強制啟動計時器，維持原本狀態
         }
     };
 
@@ -129,7 +129,7 @@ function SketchWall() {
             setError(null);
             setPastedUrl('');
             setTimeLeft(duration);
-            setIsActive(true);
+            // 不再強制啟動計時器，維持原本狀態
         }
     };
 
@@ -137,7 +137,7 @@ function SketchWall() {
     const handleDurationChange = (secs) => {
         setDuration(secs);
         setTimeLeft(secs);
-        setIsActive(true);
+        // 不再強制啟動計時器，維持原本狀態
     };
 
     // Switch practice mode
@@ -154,7 +154,7 @@ function SketchWall() {
             }
         }
         setTimeLeft(duration);
-        setIsActive(true);
+        // 不再強制啟動計時器，維持原本狀態
     };
 
     // Toggle play/pause
@@ -375,7 +375,7 @@ function SketchWall() {
             `}</style>
 
             <h3 style={headerStyle}>
-                <span>⏱️</span> 速寫練習計時牆
+                <span>⏱️</span> 速寫計時牆
             </h3>
 
             {/* Mode Switcher */}
@@ -401,20 +401,20 @@ function SketchWall() {
             {/* Duration Selector */}
             <div style={durationContainerStyle}>
                 <button
-                    style={getDurationBtnStyle(30)}
-                    onClick={() => handleDurationChange(30)}
-                    onMouseEnter={() => setHoveredEl('dur-30')}
-                    onMouseLeave={() => setHoveredEl(null)}
-                >
-                    ⏱️ 30 秒速寫
-                </button>
-                <button
                     style={getDurationBtnStyle(60)}
                     onClick={() => handleDurationChange(60)}
                     onMouseEnter={() => setHoveredEl('dur-60')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
                     ⏱️ 60 秒速寫
+                </button>
+                <button
+                    style={getDurationBtnStyle(180)}
+                    onClick={() => handleDurationChange(180)}
+                    onMouseEnter={() => setHoveredEl('dur-180')}
+                    onMouseLeave={() => setHoveredEl(null)}
+                >
+                    ⏱️ 3 分鐘速寫
                 </button>
             </div>
 
@@ -424,7 +424,7 @@ function SketchWall() {
                     {timeLeft} <span style={{ fontSize: '1rem', color: '#666' }}>S</span>
                 </span>
                 <span style={{ fontSize: '0.75rem', color: '#888', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    {isActive ? '⏳ 倒數計時中' : '⏸️ 練習已暫停'}
+                    {isActive ? '⏳ 計時中' : '⏸️ 已暫停'}
                 </span>
                 {/* Horizontal Progress Bar */}
                 <div style={progressBarStyle} />
@@ -482,6 +482,42 @@ function SketchWall() {
                             >
                                 ⛶ {fitMode === 'contain' ? '填滿' : '完整'}
                             </button>
+                            {/* Favorite Button overlay */}
+                            {toggleFavorite && (
+                                <button
+                                    onClick={() => toggleFavorite(currentImage)}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '10px',
+                                        left: '10px',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                                        color: savedImages.some(item => String(item.id) === String(currentImage.id)) ? '#fb7185' : '#ffffff',
+                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        borderRadius: '50%',
+                                        width: '30px',
+                                        height: '30px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '1rem',
+                                        cursor: 'pointer',
+                                        zIndex: 5,
+                                        transition: 'all 0.2s',
+                                        outline: 'none',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1.1)';
+                                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'none';
+                                        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.65)';
+                                    }}
+                                    title={savedImages.some(item => String(item.id) === String(currentImage.id)) ? "取消收藏" : "加入收藏"}
+                                >
+                                    {savedImages.some(item => String(item.id) === String(currentImage.id)) ? '❤️' : '🤍'}
+                                </button>
+                            )}
                             <img
                                 src={currentImage.url}
                                 alt={currentImage.author}

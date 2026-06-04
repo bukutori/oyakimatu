@@ -1,0 +1,22 @@
+[
+  {
+    "id": "usr_001",
+    "username": "artist01",
+    "email": "artist01@example.com",
+    "passwordHash": "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
+    "displayName": "繪師小花",
+    "avatarUrl": "",
+    "role": "user",
+    "createdAt": "2025-01-15T08:00:00.000Z"
+  },
+  {
+    "id": "usr_002",
+    "username": "admin",
+    "email": "admin@example.com",
+    "passwordHash": "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
+    "displayName": "管理員",
+    "avatarUrl": "",
+    "role": "admin",
+    "createdAt": "2025-01-01T00:00:00.000Z"
+  }
+]

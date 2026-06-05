@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react' // 👈 換成最標準的 react 套件
 
 export default defineConfig({
   plugins: [react()],
-  base: '/my-art-tools/', // 👈 這裡記得一樣要維持你 GitHub 倉庫的名字喔！
+  base: '/oyakimatu/', // 👈 這裡記得一樣要維持你 GitHub 倉庫的名字喔！
 })

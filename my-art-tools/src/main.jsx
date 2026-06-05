@@ -1,10 +1,8 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  base: './', // 👈 關鍵！改成點斜線（相對路徑），這樣不管在哪個倉庫、哪個分支部署，檔案都絕對抓得到，永遠不會變白屏！
+})

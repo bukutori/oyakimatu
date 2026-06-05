@@ -136,7 +136,7 @@ function InspirationGenerator({ theme = 'dark' }) {
             try {
                 console.log('[InspirationGenerator] Fetching image pool from backend...');
                 const response = await axios.get(
-                    'http://localhost:5000/api/images?category=動作參考&per_page=30'
+                    `${import.meta.env.VITE_API_URL}/api/images?category=動作參考&per_page=30`
                 );
                 if (response.data.success && Array.isArray(response.data.images)) {
                     setImagePool(response.data.images);

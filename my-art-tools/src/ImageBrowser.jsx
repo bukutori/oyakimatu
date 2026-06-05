@@ -142,7 +142,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
             const res = await axios.get(
 
-                `http://localhost:5000/api/images?category=${encodeURIComponent(categoryName)}&per_page=${INITIAL_LIMIT}&page=1`
+                `${import.meta.env.VITE_API_URL}/api/images?category=${encodeURIComponent(categoryName)}&per_page=${INITIAL_LIMIT}&page=1`
 
             );
 
@@ -198,7 +198,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
             const res = await axios.get(
 
-                `http://localhost:5000/api/images?category=${encodeURIComponent(categoryName)}&per_page=${MORE_LIMIT}&page=${currentPage}`
+                `${import.meta.env.VITE_API_URL}/api/images?category=${encodeURIComponent(categoryName)}&per_page=${MORE_LIMIT}&page=${currentPage}`
 
             );
 

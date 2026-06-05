@@ -1,8 +1,7 @@
-// 📁 修改位置：my-art-tools/vite.config.js
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react' // 👈 換成最標準的 react 套件，不要用 swc 了！
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/oyakimatu/', // 👈 這裡記得一樣要維持你 GitHub 倉庫的名字喔！
+  base: './', // 👈 關鍵！改成點斜線（相對路徑），這樣不管 GitHub 怎麼迷路，它都會在「同一個資料夾」裡直接抓檔案，再也不會 404！
 })

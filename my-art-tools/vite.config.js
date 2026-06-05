@@ -1,8 +1,8 @@
+// 📁 修改位置：my-art-tools/vite.config.js
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react' // 👈 換成最標準的 react 套件，不要用 swc 了！
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/oyakimatu/', // 👈 記得改成你的 GitHub 專案名稱，前後都要有斜線！
+  base: '/my-art-tools/', // 👈 這裡記得一樣要維持你 GitHub 倉庫的名字喔！
 })

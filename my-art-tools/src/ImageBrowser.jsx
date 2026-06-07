@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
 import axios from 'axios';
+import TRANSLATIONS from './translations';
 
 
 
@@ -94,11 +95,14 @@ const THEMES = {
 
 // ──────────────────────────────────────────────────
 
-function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
+function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', language = 'zh' }) {
 
 
 
     const [selectedCategory, setSelectedCategory] = useState(categories[0]);
+
+    // Translation helper
+    const t = (key) => TRANSLATIONS[language][key] || key;
 
     const [images, setImages] = useState([]);
 
@@ -165,7 +169,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
             console.error('ImageBrowser fetchImages error:', err);
 
-            setError('圖片載入失敗，請檢查網路連線。');
+            setError(t('loadFailed'));
 
         } finally {
 
@@ -255,7 +259,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
             if (pinnedImages.length >= 6) {
 
-                alert('釘選對照畫布最多只能放置 6 張圖片喔！');
+                alert(t('pinLimit'));
 
                 return;
 
@@ -283,7 +287,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
                 author: item.author,
 
-                url: `https://picsum.photos/id/${item.id}/600/450`,
+                url: item.url,
 
                 isCustom: false,
 
@@ -547,7 +551,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
             {/* 標題 */}
 
-            <h2 style={headerStyle}>靈感圖庫</h2>
+            <h2 style={headerStyle}>{t('inspirationGallery')}</h2>
 
 
 
@@ -571,7 +575,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
                     >
 
-                        {cat.name}
+                        {t(cat.id === 'poses' ? 'poses' : cat.id === 'landscapes' ? 'landscapes' : cat.id === 'outfits' ? 'outfits' : cat.id === 'nature' ? 'nature' : cat.id === 'urban' ? 'urban' : 'all')}
 
                     </button>
 
@@ -607,7 +611,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
                         <span style={{ fontSize: '0.85rem', color: '#60a5fa', fontWeight: 'bold' }}>
 
-                            📌 釘選對照畫布（{pinnedImages.length}）
+                            📌 {t('pinnedCanvas')}（{pinnedImages.length}）
 
                         </span>
 
@@ -631,7 +635,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
                             >
 
-                                🔍 多圖對比
+                                {t('multiCompare')}
 
                             </button>
 
@@ -651,7 +655,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
                             >
 
-                                清空
+                                {t('clear')}
 
                             </button>
 
@@ -793,7 +797,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                                         color: currentTheme.text,
                                         animation: 'pulse 1.5s infinite ease-in-out'
                                     }}>
-                                        靈感載入中...
+                                        {t('inspirationLoading')}
                                     </span>
                                 </div>
                             )
@@ -884,7 +888,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
                                                 }}
 
-                                                title={isLiked ? '取消收藏' : '加入收藏'}
+                                                title={isLiked ? t('cancelFavorite') : t('addFavorite')}
 
                                             >
 
@@ -940,7 +944,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
                                             }}
 
-                                            title={isPinned ? '取消釘選' : '釘選到畫布'}
+                                            title={isPinned ? t('cancelPin') : t('pinToCanvas')}
 
                                         >
 
@@ -1058,7 +1062,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
                             >
 
-                                {loadingMore ? '載入中...稍等一下呦' : '載入更多靈感'}
+                                {loadingMore ? t('loadingMore') : t('loadMore')}
 
                             </button>
 
@@ -1492,7 +1496,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark' }) {
 
                                                         author: activeImage.author,
 
-                                                        url: `https://picsum.photos/id/${activeImage.id}/600/450`,
+                                                        url: activeImage.url,
 
                                                         isCustom: false,
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import TRANSLATIONS from './translations';
 
 // Theme colors
 const THEMES = {
@@ -109,9 +110,12 @@ const structures = [
 // Helper to get random element, keeping the component pure for React 19 linter rules
 const getRandomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-function InspirationGenerator({ theme = 'dark' }) {
+function InspirationGenerator({ theme = 'dark', language = 'zh' }) {
     const [activeTab, setActiveTab] = useState('text'); // 'text' or 'image'
     const currentTheme = THEMES[theme] || THEMES.dark;
+
+    // Translation helper
+    const t = (key) => TRANSLATIONS[language][key] || key;
 
     // Text challenge state
     const [challengeText, setChallengeText] = useState(null);
@@ -402,7 +406,7 @@ function InspirationGenerator({ theme = 'dark' }) {
             `}</style>
 
             <h3 style={headerStyle}>
-                <span>🔮</span> 靈感抽籤機
+                <span>🔮</span> {t('inspirationLottery')}
             </h3>
 
             {/* Tabs */}
@@ -413,7 +417,7 @@ function InspirationGenerator({ theme = 'dark' }) {
                     onMouseEnter={() => setHoveredEl('tab-text')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    📝 文字挑戰
+                    📝 {t('textChallenge')}
                 </button>
                 <button
                     style={getTabStyle('image')}
@@ -421,7 +425,7 @@ function InspirationGenerator({ theme = 'dark' }) {
                     onMouseEnter={() => setHoveredEl('tab-image')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    🖼️ 圖片挑戰
+                    🖼️ {t('imageChallenge')}
                 </button>
             </div>
 
@@ -431,7 +435,7 @@ function InspirationGenerator({ theme = 'dark' }) {
                     challengeText ? (
                         <div style={{ textAlign: 'center', animation: 'fadeIn 0.4s ease-out', width: '100%' }}>
                             <p style={{ color: currentTheme.text === '#e0e0e0' ? '#888' : '#6b7280', fontSize: '0.85rem', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
-                                🎲 隨機繪畫挑戰
+                                {t('randomDrawingChallenge')}
                             </p>
                             <h4 style={{ fontSize: '1.1rem', lineHeight: '1.75', margin: '0', fontWeight: '500', color: currentTheme.text }}>
                                 {formatChallengeText(challengeText)}
@@ -449,7 +453,7 @@ function InspirationGenerator({ theme = 'dark' }) {
                                 justifyContent: 'center'
                             }}>
                                 {quoteLoading ? (
-                                    <span style={{ fontSize: '0.85rem', color: currentTheme.text === '#e0e0e0' ? '#666' : '#6b7280', fontStyle: 'italic' }}>🔮 正在捕捉共鳴意境...</span>
+                                    <span style={{ fontSize: '0.85rem', color: currentTheme.text === '#e0e0e0' ? '#666' : '#6b7280', fontStyle: 'italic' }}>{t('capturingMood')}</span>
                                 ) : (
                                     quote && (
                                         <div style={{ animation: 'fadeIn 0.3s ease' }}>
@@ -457,7 +461,7 @@ function InspirationGenerator({ theme = 'dark' }) {
                                                 「 {quote.text} 」
                                             </p>
                                             <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 'bold' }}>
-                                                —— 意境共鳴：{quote.fromWho ? `${quote.fromWho} · ` : ''}《{quote.from}》
+                                                —— {t('moodResonance')}{quote.fromWho ? `${quote.fromWho} · ` : ''}《{quote.from}》
                                             </span>
                                         </div>
                                     )
@@ -467,7 +471,7 @@ function InspirationGenerator({ theme = 'dark' }) {
                     ) : (
                         <div style={{ textAlign: 'center', color: currentTheme.text === '#e0e0e0' ? '#666' : '#6b7280' }}>
                             <span style={{ fontSize: '2rem', display: 'block', marginBottom: '10px' }}>⚡</span>
-                            <p style={{ margin: '0', fontSize: '0.95rem', color: currentTheme.text }}>點擊下方按鈕，召喚你的創作靈感！</p>
+                            <p style={{ margin: '0', fontSize: '0.95rem', color: currentTheme.text }}>{t('clickToSummon')}</p>
                         </div>
                     )
                 ) : (
@@ -486,7 +490,7 @@ function InspirationGenerator({ theme = 'dark' }) {
                                     borderRadius: '8px'
                                 }}>
                                     <span style={{ fontSize: '1.5rem', marginBottom: '8px', display: 'inline-block', animation: 'spin 1.5s linear infinite' }}>🌀</span>
-                                    <span style={{ fontSize: '0.85rem', color: '#a78bfa' }}>靈感傳送中...</span>
+                                    <span style={{ fontSize: '0.85rem', color: '#a78bfa' }}>{t('inspirationTransferring')}</span>
                                 </div>
                             )}
                             <img
@@ -508,13 +512,13 @@ function InspirationGenerator({ theme = 'dark' }) {
                                 onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                             />
                             <span style={{ fontSize: '0.75rem', color: currentTheme.text === '#e0e0e0' ? '#666' : '#6b7280', marginTop: '8px' }}>
-                                點擊圖片放大查看
+                                {t('clickToEnlarge')}
                             </span>
                         </div>
                     ) : (
                         <div style={{ textAlign: 'center', color: '#666' }}>
                             <span style={{ fontSize: '2rem', display: 'block', marginBottom: '10px' }}>🎨</span>
-                            <p style={{ margin: '0', fontSize: '0.95rem' }}>點擊下方按鈕，抽一張天馬行空的靈感圖片！</p>
+                            <p style={{ margin: '0', fontSize: '0.95rem' }}>{t('clickToDraw')}</p>
                         </div>
                     )
                 )}
@@ -528,7 +532,7 @@ function InspirationGenerator({ theme = 'dark' }) {
                 onMouseLeave={() => setHoveredEl(null)}
                 disabled={activeTab === 'image' && isDrawing}
             >
-                {activeTab === 'text' ? '🎲 召喚隨機挑戰' : (isDrawing ? '🎰 抽籤中...' : '🌌 抽一張靈感圖')}
+                {activeTab === 'text' ? t('summonChallenge') : (isDrawing ? t('drawingLottery') : t('drawInspirationImage'))}
             </button>
 
             {/* Image Modal */}
@@ -600,7 +604,7 @@ function InspirationGenerator({ theme = 'dark' }) {
                             fontSize: '0.85rem',
                             marginTop: '12px',
                         }}>
-                            點擊背景或右上角 ✕ 關閉
+                            {t('clickToClose')}
                         </span>
                     </div>
                 </div>

@@ -10,6 +10,8 @@ import ImageBrowser from './ImageBrowser';
 
 import logoImg from './img/144.png';
 
+import TRANSLATIONS from './translations';
+
 
 
 // ─────────────────────────────────────────────
@@ -38,17 +40,17 @@ const AUTH_KEY = 'my-art-tools-auth';
 
 const NAV_TABS = [
 
-  { id: 'explore', label: ' 探索靈感' },
+  { id: 'explore', labelKey: 'explore' },
 
-  { id: 'favorites', label: ' 我的收藏' },
+  { id: 'favorites', labelKey: 'favorites' },
 
-  { id: 'sketch', label: ' 速寫練習' },
+  { id: 'sketch', labelKey: 'sketch' },
 
-  { id: 'inspiration', label: ' 靈感抽籤' },
+  { id: 'inspiration', labelKey: 'inspiration' },
 
-  { id: 'palette', label: ' 主題色票' },
+  { id: 'palette', labelKey: 'palette' },
 
-  { id: 'my-site', label: '我的網站', external: true, url: 'https://bukutori.github.io/devfolio-1.0.0/' }
+  { id: 'my-site', labelKey: 'mySite', external: true, url: 'https://bukutori.github.io/devfolio-1.0.0/' }
 
 ];
 
@@ -131,6 +133,22 @@ function App() {
 
   });
 
+  // ── 1.6 時間感知背景模式──────────────────────────────
+
+  const [autoTimeMode, setAutoTimeMode] = useState(() => {
+
+    const saved = localStorage.getItem('my-art-tools-auto-time-mode');
+
+    return saved !== null ? saved === 'true' : false; // 預設關閉
+
+  });
+
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  const [language, setLanguage] = useState('zh'); // 'zh' or 'JP'
+
 
 
   // 套用主題到 document
@@ -148,6 +166,148 @@ function App() {
     localStorage.setItem('my-art-tools-dark-mode', isDarkMode.toString());
 
   }, [isDarkMode]);
+
+  // 更新時鐘（每秒）
+
+  useEffect(() => {
+
+    const timer = setInterval(() => {
+
+      setCurrentTime(new Date());
+
+    }, 1000);
+
+    return () => clearInterval(timer);
+
+  }, []);
+
+  // 時間感知背景切換邏輯
+
+  useEffect(() => {
+
+    if (autoTimeMode) {
+
+      const hour = new Date().getHours();
+
+      const isNight = hour < 6 || hour >= 18;
+
+      setIsDarkMode(isNight);
+
+    }
+
+  }, [autoTimeMode]);
+
+  // 儲存自動時間模式設定
+
+  useEffect(() => {
+
+    localStorage.setItem('my-art-tools-auto-time-mode', autoTimeMode.toString());
+
+  }, [autoTimeMode]);
+
+  // 儲存語言設定到後端
+
+  const saveLanguagePreference = async (lang) => {
+
+    if (!user || !token) return;
+
+    try {
+
+      const response = await fetch(`${API_BASE}/user/settings`, {
+
+        method: 'PATCH',
+
+        headers: {
+
+          'Content-Type': 'application/json',
+
+          'Authorization': `Bearer ${token}`,
+
+        },
+
+        body: JSON.stringify({ language: lang }),
+
+      });
+
+      if (response.ok) {
+
+        console.log('語言設定已儲存到後端');
+
+      }
+
+    } catch (error) {
+
+      console.error('儲存語言設定失敗:', error);
+
+    }
+
+  };
+
+  // 從後端撈取語言設定
+
+  const fetchLanguagePreference = async () => {
+
+    if (!user || !token) return;
+
+    try {
+
+      const response = await fetch(`${API_BASE}/user/settings`, {
+
+        method: 'GET',
+
+        headers: {
+
+          'Authorization': `Bearer ${token}`,
+
+        },
+
+      });
+
+      if (response.ok) {
+
+        const data = await response.json();
+
+        if (data.language) {
+
+          setLanguage(data.language);
+
+        }
+
+      }
+
+    } catch (error) {
+
+      console.error('撈取語言設定失敗:', error);
+
+    }
+
+  };
+
+  // 登入成功後撈取語言設定
+
+  useEffect(() => {
+
+    if (user && token) {
+
+      fetchLanguagePreference();
+
+    }
+
+  }, [user, token]);
+
+  // 語言切換處理
+
+  const handleLanguageChange = (newLanguage) => {
+
+    setLanguage(newLanguage);
+
+    saveLanguagePreference(newLanguage);
+
+  };
+
+  // 取得當前語言的翻譯
+
+  const t = (key) => TRANSLATIONS[language][key] || key;
 
 
 
@@ -631,6 +791,8 @@ function App() {
 
             theme={isDarkMode ? 'dark' : 'light'}
 
+            language={language}
+
           />
 
         );
@@ -671,6 +833,8 @@ function App() {
 
             theme={isDarkMode ? 'dark' : 'light'}
 
+            language={language}
+
           />
 
         );
@@ -681,7 +845,7 @@ function App() {
 
       case 'inspiration':
 
-        return <InspirationGenerator theme={isDarkMode ? 'dark' : 'light'} />;
+        return <InspirationGenerator theme={isDarkMode ? 'dark' : 'light'} language={language} />;
 
 
 
@@ -689,7 +853,7 @@ function App() {
 
       case 'palette':
 
-        return <ColorPalette theme={isDarkMode ? 'dark' : 'light'} />;
+        return <ColorPalette theme={isDarkMode ? 'dark' : 'light'} language={language} />;
 
 
 
@@ -899,7 +1063,7 @@ function App() {
 
               >
 
-                {tab.label}
+                {tab.labelKey ? t(tab.labelKey) : tab.label}
 
                 {/* 外部連結圖示 */}
 
@@ -947,59 +1111,205 @@ function App() {
 
 
 
-          {/* 深色/淺色切換按鈕 */}
+          {/* 右側控制區（時鐘、背景切換、設定） */}
 
-          <button
+          <div style={{
 
-            onClick={toggleDarkMode}
+            display: 'flex',
 
-            style={{
+            alignItems: 'center',
 
-              padding: '8px 12px',
+            gap: '6px',
+
+          }}>
+
+            {/* 數位時鐘顯示 */}
+
+            <div style={{
+
+              padding: '6px 12px',
 
               borderRadius: '10px',
-
-              border: 'none',
 
               backgroundColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
 
               color: currentTheme.text,
 
-              fontSize: '1.2rem',
+              fontSize: '0.9rem',
 
-              cursor: 'pointer',
+              fontWeight: '600',
 
-              transition: 'all 0.2s',
+              fontFamily: 'monospace',
 
               display: 'flex',
 
+              flexDirection: 'column',
+
               alignItems: 'center',
 
-              justifyContent: 'center',
+              gap: '2px',
 
-            }}
+            }}>
 
-            onMouseEnter={e => {
+              <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>
 
-              e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+                {currentTime.toLocaleTimeString('zh-TW', {
 
-              e.currentTarget.style.transform = 'scale(1.05)';
+                  hour: 'numeric',
 
-            }}
+                  minute: '2-digit',
 
-            onMouseLeave={e => {
+                  hour12: true
 
-              e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+                })}
 
-              e.currentTarget.style.transform = 'scale(1)';
+              </span>
 
-            }}
+              <span style={{ fontSize: '0.75rem', fontWeight: '400', opacity: 0.8 }}>
 
-          >
+                {currentTime.toLocaleDateString('zh-TW', {
 
-            {isDarkMode ? '🌙' : '☀️'}
+                  year: 'numeric',
 
-          </button>
+                  month: 'long',
+
+                  day: 'numeric',
+
+                  weekday: 'long'
+
+                })}
+
+              </span>
+
+            </div>
+
+            {/* 深色/淺色切換按鈕 */}
+
+            <button
+
+              onClick={toggleDarkMode}
+
+              disabled={autoTimeMode}
+
+              title={autoTimeMode ? t('autoTimeModeEnabled') : t('toggleDarkMode')}
+
+              style={{
+
+                padding: '8px 12px',
+
+                borderRadius: '10px',
+
+                border: 'none',
+
+                backgroundColor: autoTimeMode ? 'rgba(128,128,128,0.2)' : (isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'),
+
+                color: autoTimeMode ? '#888' : currentTheme.text,
+
+                fontSize: '1.2rem',
+
+                cursor: autoTimeMode ? 'not-allowed' : 'pointer',
+
+                transition: 'all 0.2s',
+
+                display: 'flex',
+
+                alignItems: 'center',
+
+                justifyContent: 'center',
+
+                opacity: autoTimeMode ? 0.5 : 1,
+
+              }}
+
+              onMouseEnter={e => {
+
+                if (!autoTimeMode) {
+
+                  e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+
+                  e.currentTarget.style.transform = 'scale(1.05)';
+
+                }
+
+              }}
+
+              onMouseLeave={e => {
+
+                if (!autoTimeMode) {
+
+                  e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+
+                  e.currentTarget.style.transform = 'scale(1)';
+
+                }
+
+              }}
+
+            >
+
+              {isDarkMode ? '🌙' : '☀️'}
+
+            </button>
+
+            {/* 設定按鈕（僅登入後顯示） */}
+
+            {user && (
+
+              <button
+
+                onClick={() => setShowSettingsModal(true)}
+
+                style={{
+
+                  padding: '8px 12px',
+
+                  borderRadius: '10px',
+
+                  border: 'none',
+
+                  backgroundColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
+
+                  color: currentTheme.text,
+
+                  fontSize: '1.2rem',
+
+                  cursor: 'pointer',
+
+                  transition: 'all 0.2s',
+
+                  display: 'flex',
+
+                  alignItems: 'center',
+
+                  justifyContent: 'center',
+
+                }}
+
+                onMouseEnter={e => {
+
+                  e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+
+                  e.currentTarget.style.transform = 'scale(1.05)';
+
+                }}
+
+                onMouseLeave={e => {
+
+                  e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+
+                  e.currentTarget.style.transform = 'scale(1)';
+
+                }}
+
+              >
+
+                ⚙️
+
+              </button>
+
+            )}
+
+          </div>
 
 
 
@@ -1240,6 +1550,346 @@ function App() {
           theme={isDarkMode ? 'dark' : 'light'}
 
         />
+
+      )}
+
+      {/* ── 設定 Modal ────────────────────────────────── */}
+
+      {showSettingsModal && (
+
+        <div
+
+          style={{
+
+            position: 'fixed',
+
+            inset: 0,
+
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+
+            display: 'flex',
+
+            alignItems: 'center',
+
+            justifyContent: 'center',
+
+            zIndex: 2000,
+
+            backdropFilter: 'blur(4px)',
+
+          }}
+
+          onClick={() => setShowSettingsModal(false)}
+
+        >
+
+          <div
+
+            style={{
+
+              backgroundColor: currentTheme.cardBg,
+
+              borderRadius: '16px',
+
+              padding: '28px',
+
+              maxWidth: '400px',
+
+              width: '90%',
+
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+
+              border: `1px solid ${currentTheme.border}`,
+
+            }}
+
+            onClick={e => e.stopPropagation()}
+
+          >
+
+            <div style={{
+
+              display: 'flex',
+
+              justifyContent: 'space-between',
+
+              alignItems: 'center',
+
+              marginBottom: '24px',
+
+            }}>
+
+              <h3 style={{
+
+                margin: 0,
+
+                fontSize: '1.3rem',
+
+                fontWeight: 'bold',
+
+                color: currentTheme.text,
+
+              }}>
+
+                ⚙️ {t('settings')}
+
+              </h3>
+
+              <button
+
+                onClick={() => setShowSettingsModal(false)}
+
+                style={{
+
+                  background: 'none',
+
+                  border: 'none',
+
+                  color: currentTheme.text,
+
+                  fontSize: '1.5rem',
+
+                  cursor: 'pointer',
+
+                  padding: '4px',
+
+                  lineHeight: '1',
+
+                }}
+
+              >
+
+                ✕
+
+              </button>
+
+            </div>
+
+            {/* 語言選擇 */}
+
+            <div style={{
+
+              display: 'flex',
+
+              justifyContent: 'space-between',
+
+              alignItems: 'center',
+
+              padding: '16px',
+
+              backgroundColor: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
+
+              borderRadius: '12px',
+
+              border: `1px solid ${currentTheme.border}`,
+
+              marginBottom: '16px',
+
+            }}>
+
+              <div>
+
+                <div style={{
+
+                  fontSize: '1rem',
+
+                  fontWeight: '600',
+
+                  color: currentTheme.text,
+
+                  marginBottom: '4px',
+
+                }}>
+
+                  {t('language')}
+
+                </div>
+
+              </div>
+
+              <select
+
+                value={language}
+
+                onChange={(e) => handleLanguageChange(e.target.value)}
+
+                style={{
+
+                  padding: '8px 12px',
+
+                  borderRadius: '8px',
+
+                  border: `1px solid ${currentTheme.border}`,
+
+                  backgroundColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
+
+                  color: currentTheme.text,
+
+                  fontSize: '0.9rem',
+
+                  cursor: 'pointer',
+
+                  outline: 'none',
+
+                }}
+
+              >
+
+                <option value="zh">繁體中文</option>
+
+                <option value="JP">日本語</option>
+
+              </select>
+
+            </div>
+
+            {/* 時間感知背景開關 */}
+
+            <div style={{
+
+              display: 'flex',
+
+              justifyContent: 'space-between',
+
+              alignItems: 'center',
+
+              padding: '16px',
+
+              backgroundColor: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
+
+              borderRadius: '12px',
+
+              border: `1px solid ${currentTheme.border}`,
+
+            }}>
+
+              <div>
+
+                <div style={{
+
+                  fontSize: '1rem',
+
+                  fontWeight: '600',
+
+                  color: currentTheme.text,
+
+                  marginBottom: '4px',
+
+                }}>
+
+                  {t('timeAwareBackground')}
+
+                </div>
+
+                <div style={{
+
+                  fontSize: '0.8rem',
+
+                  color: isLight ? '#6b7280' : '#888',
+
+                }}>
+
+                  {t('timeAwareBackgroundDesc')}
+
+                </div>
+
+              </div>
+
+              <button
+
+                onClick={() => setAutoTimeMode(!autoTimeMode)}
+
+                style={{
+
+                  width: '52px',
+
+                  height: '28px',
+
+                  borderRadius: '14px',
+
+                  border: 'none',
+
+                  backgroundColor: autoTimeMode ? (isLight ? '#3b82f6' : '#fb7185') : (isLight ? '#d1d5db' : '#4b5563'),
+
+                  cursor: 'pointer',
+
+                  position: 'relative',
+
+                  transition: 'background-color 0.2s',
+
+                }}
+
+              >
+
+                <div
+
+                  style={{
+
+                    position: 'absolute',
+
+                    top: '3px',
+
+                    left: autoTimeMode ? '27px' : '3px',
+
+                    width: '22px',
+
+                    height: '22px',
+
+                    borderRadius: '50%',
+
+                    backgroundColor: '#ffffff',
+
+                    transition: 'left 0.2s',
+
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+
+                  }}
+
+                />
+
+              </button>
+
+            </div>
+
+            {/* 說明文字 */}
+
+            <div style={{
+
+              marginTop: '16px',
+
+              padding: '12px',
+
+              backgroundColor: isLight ? 'rgba(59, 130, 246, 0.08)' : 'rgba(251, 113, 133, 0.08)',
+
+              borderRadius: '8px',
+
+              border: isLight ? '1px solid rgba(59, 130, 246, 0.2)' : '1px solid rgba(251, 113, 133, 0.2)',
+
+              fontSize: '0.8rem',
+
+              color: isLight ? '#3b82f6' : '#fb7185',
+
+              lineHeight: '1.6',
+
+            }}>
+
+              <strong>{t('timeRules')}</strong><br />
+
+              • {t('dayMode')}<br />
+
+              • {t('nightMode')}<br />
+
+              <br />
+
+              <strong>{t('note')}</strong><br />
+
+              {t('autoModeNote')}
+
+            </div>
+
+          </div>
+
+        </div>
 
       )}
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import TRANSLATIONS from './translations';
 
 // Theme colors
 const THEMES = {
@@ -22,13 +23,18 @@ const PRESET_PALETTES = [
     ['#742DDD', '#4A00E0', '#8E2DE2', '#F000FF', '#00FFFF'],
     ['#FF6B6B', '#4D96FF', '#6BCB77', '#FFA1A1', '#FFE162'],
     ['#20232A', '#282C34', '#61DAFB', '#21252B', '#ABB2BF'],
-    ['#0F2027', '#203A43', '#2C5364', '#3A6073', '#FFF']
+    ['#0F2027', '#203A43', '#2C5364', '#3A6073', '#FFF'],
+    ['#FF00FF', '#00FF00', '#0000FF', '#FFFF00', '#FF0000'], // 隨機配色：極端亮色混搭
 ];
 
-export default function ColorPalette({ theme = 'dark' }) {
+export default function ColorPalette({ theme = 'dark', language = 'zh' }) {
     const [colors, setColors] = useState([]);
     const [copiedColor, setCopiedColor] = useState(null);
     const currentTheme = THEMES[theme] || THEMES.dark;
+    const [isRandomMode, setIsRandomMode] = useState(false);
+
+    // Translation helper
+    const t = (key) => TRANSLATIONS[language][key] || key;
 
     // 新增狀態：用來追蹤目前滑鼠正懸停在哪一個色塊上 (0~4)，null 代表沒有
     const [hoveredIndex, setHoveredIndex] = useState(null);
@@ -47,6 +53,19 @@ export default function ColorPalette({ theme = 'dark' }) {
         setColors(newColors);
     };
 
+    // 隨機配色扭蛋機：生成高對比、極端亮色與暗色混搭的瘋狂顏色
+    const generateRandomCrazyPalette = () => {
+        const newColors = [];
+        for (let i = 0; i < 6; i++) {
+            // 隨機生成 RGB 值，偏向高飽和和極端亮度
+            const r = Math.floor(Math.random() * 256);
+            const g = Math.floor(Math.random() * 256);
+            const b = Math.floor(Math.random() * 256);
+            newColors.push(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`);
+        }
+        setColors(newColors);
+    };
+
     // 點擊複製功能
     const handleCopy = (color) => {
         navigator.clipboard.writeText(color).then(() => {
@@ -55,9 +74,25 @@ export default function ColorPalette({ theme = 'dark' }) {
         });
     };
 
-    useEffect(() => {
+    // 切換到和諧配色模式
+    const handleHarmoniousMode = () => {
+        setIsRandomMode(false);
         generateHarmoniousPalette();
-    }, []);
+    };
+
+    // 切換到隨機配色模式
+    const handleRandomMode = () => {
+        setIsRandomMode(true);
+        generateRandomCrazyPalette();
+    };
+
+    useEffect(() => {
+        if (isRandomMode) {
+            generateRandomCrazyPalette();
+        } else {
+            generateHarmoniousPalette();
+        }
+    }, [isRandomMode]);
 
     // Dynamic styles based on theme
     const styles = {
@@ -163,17 +198,46 @@ export default function ColorPalette({ theme = 'dark' }) {
             {/* 頂部標題與按鈕 */}
             <div style={styles.header}>
                 <div>
-                    <h3 style={styles.title}>🎨 主題調色盤</h3>
-                    <p style={styles.subtitle}>點擊色彩條即可複製 Hex 色碼</p>
+                    <h3 style={styles.title}>🎨 {t('themePalette')}</h3>
+                    <p style={styles.subtitle}>{t('clickToCopy')}</p>
+                     <p style={styles.subtitle}>{t('clickToChange')}</p>
                 </div>
-                <button
-                    onClick={generateHarmoniousPalette}
-                    style={styles.button}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                >
-                    更換色票
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        onClick={handleHarmoniousMode}
+                        style={{
+                            ...styles.button,
+                            backgroundColor: !isRandomMode ? '#742DDD' : '#e5e7eb',
+                            boxShadow: !isRandomMode ? '0 4px 12px rgba(116, 45, 221, 0.3)' : 'none',
+                            color: !isRandomMode ? '#ffffff' : '#6b7280',
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!isRandomMode) e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!isRandomMode) e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                    >
+                        🎨 {t('harmoniousPalette')}
+                    </button>
+                    <button
+                        onClick={handleRandomMode}
+                        style={{
+                            ...styles.button,
+                            backgroundColor: isRandomMode ? '#FF00FF' : '#e5e7eb',
+                            boxShadow: isRandomMode ? '0 4px 12px rgba(255, 0, 255, 0.3)' : 'none',
+                            color: isRandomMode ? '#ffffff' : '#6b7280',
+                        }}
+                        onMouseEnter={(e) => {
+                            if (isRandomMode) e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                            if (isRandomMode) e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                    >
+                        🎲 {t('randomPalette')}
+                    </button>
+                </div>
             </div>
 
             {/* 色票長條狀區塊 */}
@@ -204,7 +268,7 @@ export default function ColorPalette({ theme = 'dark' }) {
                                     ...styles.copyOverlay,
                                     opacity: isHovered ? 1 : 0,
                                 }}>
-                                    Copy
+                                    {t('copy')}
                                 </div>
                             </div>
                             {/* 下方 Hex 字串 */}
@@ -226,7 +290,7 @@ export default function ColorPalette({ theme = 'dark' }) {
                 transform: copiedColor ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(10px)',
                 pointerEvents: 'none'
             }}>
-                已複製色碼：{copiedColor ? copiedColor.toUpperCase() : ''} !
+                {t('colorCopied')}{copiedColor ? copiedColor.toUpperCase() : ''} !
             </div>
         </div>
     );

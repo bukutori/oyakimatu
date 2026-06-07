@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import TRANSLATIONS from './translations';
 
 // Theme colors
 const THEMES = {
@@ -21,8 +22,11 @@ const THEMES = {
 const getRandomPage = () => Math.floor(Math.random() * 80) + 1;
 const getRandomIndex = (length) => Math.floor(Math.random() * length);
 
-function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
+function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language = 'zh' }) {
     const currentTheme = THEMES[theme] || THEMES.dark;
+
+    // Translation helper
+    const t = (key) => TRANSLATIONS[language][key] || key;
     const isLight = theme === 'light';
     const [duration, setDuration] = useState(30); // 30s or 60s
     const [timeLeft, setTimeLeft] = useState(30);
@@ -33,6 +37,13 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
     const [fitMode, setFitMode] = useState('contain'); // 'contain' or 'cover'
     const [hoveredEl, setHoveredEl] = useState(null);
     const [showImageModal, setShowImageModal] = useState(false);
+    const [customSeconds, setCustomSeconds] = useState('');
+    const [isCustomDuration, setIsCustomDuration] = useState(false);
+
+    // Modal timer state
+    const [modalTimer, setModalTimer] = useState(0);
+    const [modalTimerActive, setModalTimerActive] = useState(false);
+    const modalTimerRef = useRef(null);
 
     // Practice Mode: 'random' (system gallery) or 'custom' (user custom images)
     const [practiceMode, setPracticeMode] = useState('random');
@@ -66,7 +77,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
             }
         } catch (err) {
             console.error("Error fetching random image:", err);
-            setError("無法載入參考圖，請嘗試重新載入。");
+            setError(t('loadImageError'));
         } finally {
             setLoading(false);
         }
@@ -112,6 +123,29 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
         };
     }, [isActive, timeLeft, duration, practiceMode, customImages, customIndex]);
 
+    // Modal timer logic
+    useEffect(() => {
+        if (modalTimerActive && modalTimer > 0) {
+            modalTimerRef.current = setInterval(() => {
+                setModalTimer((prev) => prev - 1);
+            }, 1000);
+        }
+
+        return () => {
+            if (modalTimerRef.current) {
+                clearInterval(modalTimerRef.current);
+            }
+        };
+    }, [modalTimerActive, modalTimer]);
+
+    // Reset modal timer when modal opens/closes
+    useEffect(() => {
+        if (showImageModal) {
+            setModalTimer(duration);
+            setModalTimerActive(false);
+        }
+    }, [showImageModal, duration]);
+
     // Handle local file upload
     const handleLocalUpload = (e) => {
         const files = Array.from(e.target.files);
@@ -137,7 +171,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
         if (url.trim()) {
             const newImage = {
                 id: `custom-url-${Date.now()}`,
-                author: '自訂網址來源',
+                author: t('customReference'),
                 url: url.trim(),
                 isCustom: true
             };
@@ -156,7 +190,19 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
     const handleDurationChange = (secs) => {
         setDuration(secs);
         setTimeLeft(secs);
+        setIsCustomDuration(false);
         // 不再強制啟動計時器，維持原本狀態
+    };
+
+    // Handle custom duration input
+    const handleCustomDurationSubmit = () => {
+        const secs = parseInt(customSeconds);
+        if (secs && secs > 0 && secs <= 3600) {
+            setDuration(secs);
+            setTimeLeft(secs);
+            setIsCustomDuration(true);
+            setCustomSeconds('');
+        }
     };
 
     // Switch practice mode
@@ -184,6 +230,20 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
     // Reset current countdown
     const handleReset = () => {
         setTimeLeft(duration);
+    };
+
+    // Modal timer handlers
+    const handleModalTimerStart = () => {
+        setModalTimerActive(true);
+    };
+
+    const handleModalTimerPause = () => {
+        setModalTimerActive(false);
+    };
+
+    const handleModalTimerReset = () => {
+        setModalTimer(0);
+        setModalTimerActive(false);
     };
 
     // Style constants
@@ -398,7 +458,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
             `}</style>
 
             <h3 style={headerStyle}>
-                <span>⏱️</span> 速寫計時牆
+                <span>⏱️</span> {t('sketchTimerWall')}
             </h3>
 
             {/* Mode Switcher */}
@@ -409,7 +469,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                     onMouseEnter={() => setHoveredEl('mode-random')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    🎲 隨機圖庫
+                    🎲 {t('randomGallery')}
                 </button>
                 <button
                     style={getModeBtnStyle('custom')}
@@ -417,7 +477,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                     onMouseEnter={() => setHoveredEl('mode-custom')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    📁 自訂圖片
+                    📁 {t('customImages')}
                 </button>
             </div>
 
@@ -429,7 +489,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                     onMouseEnter={() => setHoveredEl('dur-60')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    ⏱️ 60 秒速寫
+                    ⏱️ 60 {t('secondsSketch')}
                 </button>
                 <button
                     style={getDurationBtnStyle(180)}
@@ -437,8 +497,53 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                     onMouseEnter={() => setHoveredEl('dur-180')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    ⏱️ 3 分鐘速寫
+                    ⏱️ 3 {t('minutesSketch')}
                 </button>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input
+                        type="number"
+                        value={customSeconds}
+                        onChange={(e) => setCustomSeconds(e.target.value)}
+                        placeholder={t('customSeconds')}
+                        min="1"
+                        max="3600"
+                        style={{
+                            width: '80px',
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            border: `1px solid ${currentTheme.border}`,
+                            backgroundColor: currentTheme.cardBg,
+                            color: currentTheme.text,
+                            fontSize: '0.85rem',
+                            outline: 'none',
+                            textAlign: 'center',
+                        }}
+                        onFocus={e => e.currentTarget.style.borderColor = isLight ? '#3b82f6' : '#fb7185'}
+                        onBlur={e => e.currentTarget.style.borderColor = currentTheme.border}
+                    />
+                    <button
+                        onClick={handleCustomDurationSubmit}
+                        style={{
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            border: isCustomDuration ? 'none' : `1px solid ${currentTheme.border}`,
+                            backgroundColor: isCustomDuration
+                                ? (isLight ? '#3b82f6' : '#fb7185')
+                                : (hoveredEl === 'dur-custom' ? currentTheme.cardBg : currentTheme.cardBg),
+                            color: isCustomDuration ? '#ffffff' : (hoveredEl === 'dur-custom' ? currentTheme.text : (isLight ? '#6b7280' : '#8c8c8c')),
+                            fontWeight: 'bold',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            outline: 'none',
+                            boxShadow: isCustomDuration ? (isLight ? '0 4px 12px rgba(59, 130, 246, 0.3)' : '0 4px 12px rgba(251, 113, 133, 0.3)') : 'none',
+                        }}
+                        onMouseEnter={() => setHoveredEl('dur-custom')}
+                        onMouseLeave={() => setHoveredEl(null)}
+                    >
+                        {t('set')}
+                    </button>
+                </div>
             </div>
 
             {/* Glowing Timer Display */}
@@ -447,7 +552,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                     {timeLeft} <span style={{ fontSize: '1rem', color: isLight ? '#6b7280' : '#666' }}>S</span>
                 </span>
                 <span style={{ fontSize: '0.75rem', color: isLight ? '#6b7280' : '#888', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    {isActive ? '⏳ 計時中' : '⏸️ 已暫停'}
+                    {isActive ? '⏳ ' + t('timing') : '⏸️ ' + t('paused')}
                 </span>
                 {/* Horizontal Progress Bar */}
                 <div style={progressBarStyle} />
@@ -458,8 +563,8 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                 {practiceMode === 'custom' && customImages.length === 0 ? (
                     <div style={{ textAlign: 'center', color: isLight ? '#6b7280' : '#666', padding: '20px' }}>
                         <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '10px' }}>📁</span>
-                        <p style={{ margin: '0 0 6px 0', fontSize: '0.95rem', color: isLight ? '#6b7280' : '#8c8c8c' }}>尚未載入自訂圖片</p>
-                        <p style={{ margin: '0', fontSize: '0.8rem', color: isLight ? '#6b7280' : '#555' }}>請在下方上傳本地圖片或貼上網址</p>
+                        <p style={{ margin: '0 0 6px 0', fontSize: '0.95rem', color: isLight ? '#6b7280' : '#8c8c8c' }}>{t('noCustomImages')}</p>
+                        <p style={{ margin: '0', fontSize: '0.8rem', color: isLight ? '#6b7280' : '#555' }}>{t('uploadOrPaste')}</p>
                     </div>
                 ) : loading ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -474,7 +579,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                             color: isLight ? '#3b82f6' : '#fb7185',
                             animation: 'pulse 1.5s infinite ease-in-out'
                         }}>
-                            網頁畫布準備中...
+                            {t('canvasPreparing')}
                         </span>
                     </div>
                 ) : error ? (
@@ -490,7 +595,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                                     padding: '4px 8px', cursor: 'pointer'
                                 }}
                             >
-                                重試
+                                {t('retry')}
                             </button>
                         )}
                     </div>
@@ -501,9 +606,9 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                             <button
                                 onClick={() => setFitMode(fitMode === 'contain' ? 'cover' : 'contain')}
                                 style={fitToggleStyle}
-                                title="切換裁剪填充或完整顯示"
+                                title={t('toggleFitMode')}
                             >
-                                ⛶ {fitMode === 'contain' ? '填滿' : '完整'}
+                                ⛶ {fitMode === 'contain' ? t('fill') : t('full')}
                             </button>
                             {/* Favorite Button overlay */}
                             {toggleFavorite && (
@@ -536,7 +641,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                                         e.currentTarget.style.transform = 'none';
                                         e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.65)';
                                     }}
-                                    title={savedImages.some(item => String(item.id) === String(currentImage.id)) ? "取消收藏" : "加入收藏"}
+                                    title={savedImages.some(item => String(item.id) === String(currentImage.id)) ? t('unfavorite') : t('favorite')}
                                 >
                                     {savedImages.some(item => String(item.id) === String(currentImage.id)) ? '❤️' : '🤍'}
                                 </button>
@@ -568,7 +673,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                                 pointerEvents: 'none',
                             }}>
                                 <span>
-                                    {currentImage.isCustom ? '📁 自訂參考：' : '👤 參考圖源：'}
+                                    {currentImage.isCustom ? t('customReference') : t('referenceSource')}
                                     {currentImage.author}
                                 </span>
                                 <span>
@@ -601,7 +706,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                         onMouseEnter={() => setHoveredEl('custom-upload')}
                         onMouseLeave={() => setHoveredEl(null)}
                     >
-                        📁 選擇本地圖片 (支援複選批次練習)
+                        📁 {t('selectLocalImages')}
                         <input
                             type="file"
                             multiple
@@ -614,7 +719,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                     <div style={{ display: 'flex', gap: '8px' }}>
                         <input
                             type="text"
-                            placeholder="或輸入線上圖片 URL..."
+                            placeholder={t('orEnterUrl')}
                             value={pastedUrl}
                             onChange={(e) => setPastedUrl(e.target.value)}
                             style={{
@@ -642,7 +747,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                                 transition: 'opacity 0.2s',
                             }}
                         >
-                            載入
+                            {t('load')}
                         </button>
                     </div>
                 </div>
@@ -656,7 +761,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                     onMouseEnter={() => setHoveredEl('ctrl-play-pause')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    {isActive ? '⏸ 暫停' : '▶ 繼續'}
+                    {isActive ? '⏸ ' + t('pause') : '▶ ' + t('continue')}
                 </button>
                 <button
                     style={getControlBtnStyle('reset')}
@@ -664,7 +769,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                     onMouseEnter={() => setHoveredEl('ctrl-reset')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    🔄 重設
+                    🔄 {t('reset')}
                 </button>
                 <button
                     style={getControlBtnStyle('skip')}
@@ -672,7 +777,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                     onMouseEnter={() => setHoveredEl('ctrl-skip')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    ⏩ 下一張 (Skip)
+                    ⏩ {t('nextImage')}
                 </button>
             </div>
 
@@ -696,11 +801,16 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                     <div
                         style={{
                             position: 'relative',
-                            maxWidth: '90vw',
+                            maxWidth: '95vw',
                             maxHeight: '90vh',
                             display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
+                            flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+                            alignItems: 'stretch',
+                            gap: '20px',
+                            backgroundColor: currentTheme.cardBg,
+                            borderRadius: '16px',
+                            padding: '20px',
+                            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
                         }}
                         onClick={e => e.stopPropagation()}
                     >
@@ -726,27 +836,169 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark' }) {
                             ✕
                         </button>
 
-                        {/* Enlarged Image */}
-                        <img
-                            src={currentImage.url}
-                            alt={currentImage.author}
-                            style={{
-                                maxWidth: '100%',
-                                maxHeight: '85vh',
-                                borderRadius: '12px',
-                                objectFit: 'contain',
-                                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
-                            }}
-                        />
-
-                        {/* Hint */}
-                        <span style={{
-                            color: '#888',
-                            fontSize: '0.85rem',
-                            marginTop: '12px',
+                        {/* Left: Image Display (70-80%) */}
+                        <div style={{
+                            flex: '1',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: '400px',
                         }}>
-                            點擊背景或右上角 ✕ 關閉
-                        </span>
+                            <img
+                                src={currentImage.url}
+                                alt={currentImage.author}
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '80vh',
+                                    borderRadius: '12px',
+                                    objectFit: 'contain',
+                                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+                                }}
+                            />
+                        </div>
+
+                        {/* Right: Sidebar Control Panel (20-30%) */}
+                        <div style={{
+                            width: window.innerWidth < 768 ? '100%' : '280px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '20px',
+                            padding: '10px',
+                            borderLeft: window.innerWidth < 768 ? 'none' : `1px solid ${currentTheme.border}`,
+                            borderTop: window.innerWidth < 768 ? `1px solid ${currentTheme.border}` : 'none',
+                        }}>
+                            {/* Timer Display */}
+                            <div style={{
+                                textAlign: 'center',
+                                padding: '20px',
+                                backgroundColor: isLight ? 'rgba(59, 130, 246, 0.1)' : 'rgba(251, 113, 133, 0.1)',
+                                borderRadius: '12px',
+                                border: `1px solid ${isLight ? 'rgba(59, 130, 246, 0.3)' : 'rgba(251, 113, 133, 0.3)'}`,
+                            }}>
+                                <div style={{
+                                    fontSize: '3rem',
+                                    fontWeight: 'bold',
+                                    color: isLight ? '#3b82f6' : '#fb7185',
+                                    fontFamily: 'monospace',
+                                    lineHeight: '1',
+                                    marginBottom: '8px',
+                                }}>
+                                    {Math.floor(modalTimer / 60).toString().padStart(2, '0')}:{(modalTimer % 60).toString().padStart(2, '0')}
+                                </div>
+                                <div style={{
+                                    fontSize: '0.85rem',
+                                    color: isLight ? '#6b7280' : '#888',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '1px',
+                                }}>
+                                    {modalTimerActive ? '⏳ ' + t('timing') : '⏸️ ' + t('paused')}
+                                </div>
+                            </div>
+
+                            {/* Control Buttons */}
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '12px',
+                            }}>
+                                <button
+                                    onClick={handleModalTimerStart}
+                                    disabled={modalTimerActive}
+                                    style={{
+                                        padding: '14px',
+                                        borderRadius: '10px',
+                                        border: 'none',
+                                        backgroundColor: modalTimerActive
+                                            ? (isLight ? '#e5e7eb' : '#374151')
+                                            : (isLight ? '#3b82f6' : '#fb7185'),
+                                        color: modalTimerActive ? (isLight ? '#9ca3af' : '#6b7280') : '#ffffff',
+                                        fontWeight: 'bold',
+                                        fontSize: '1rem',
+                                        cursor: modalTimerActive ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        boxShadow: modalTimerActive ? 'none' : (isLight ? '0 4px 12px rgba(59, 130, 246, 0.3)' : '0 4px 12px rgba(251, 113, 133, 0.3)'),
+                                    }}
+                                    onMouseEnter={e => {
+                                        if (!modalTimerActive) {
+                                            e.currentTarget.style.transform = 'translateY(-2px)';
+                                            e.currentTarget.style.boxShadow = isLight ? '0 6px 16px rgba(59, 130, 246, 0.4)' : '0 6px 16px rgba(251, 113, 133, 0.4)';
+                                        }
+                                    }}
+                                    onMouseLeave={e => {
+                                        if (!modalTimerActive) {
+                                            e.currentTarget.style.transform = 'translateY(0)';
+                                            e.currentTarget.style.boxShadow = isLight ? '0 4px 12px rgba(59, 130, 246, 0.3)' : '0 4px 12px rgba(251, 113, 133, 0.3)';
+                                        }
+                                    }}
+                                >
+                                    ▶ {t('continue')}
+                                </button>
+                                <button
+                                    onClick={handleModalTimerPause}
+                                    disabled={!modalTimerActive}
+                                    style={{
+                                        padding: '14px',
+                                        borderRadius: '10px',
+                                        border: `1px solid ${currentTheme.border}`,
+                                        backgroundColor: !modalTimerActive
+                                            ? (isLight ? '#e5e7eb' : '#374151')
+                                            : (isLight ? '#f59e0b' : '#fbbf24'),
+                                        color: !modalTimerActive ? (isLight ? '#9ca3af' : '#6b7280') : '#ffffff',
+                                        fontWeight: 'bold',
+                                        fontSize: '1rem',
+                                        cursor: !modalTimerActive ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s ease',
+                                    }}
+                                    onMouseEnter={e => {
+                                        if (modalTimerActive) {
+                                            e.currentTarget.style.transform = 'translateY(-2px)';
+                                        }
+                                    }}
+                                    onMouseLeave={e => {
+                                        if (modalTimerActive) {
+                                            e.currentTarget.style.transform = 'translateY(0)';
+                                        }
+                                    }}
+                                >
+                                    ⏸ {t('pause')}
+                                </button>
+                                <button
+                                    onClick={handleModalTimerReset}
+                                    style={{
+                                        padding: '14px',
+                                        borderRadius: '10px',
+                                        border: `1px solid ${currentTheme.border}`,
+                                        backgroundColor: currentTheme.cardBg,
+                                        color: currentTheme.text,
+                                        fontWeight: 'bold',
+                                        fontSize: '1rem',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                    }}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.backgroundColor = isLight ? '#e5e7eb' : '#374151';
+                                        e.currentTarget.style.transform = 'translateY(-2px)';
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.backgroundColor = currentTheme.cardBg;
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                    }}
+                                >
+                                    🔄 {t('reset')}
+                                </button>
+                            </div>
+
+                            {/* Hint */}
+                            <div style={{
+                                marginTop: 'auto',
+                                textAlign: 'center',
+                                color: isLight ? '#6b7280' : '#888',
+                                fontSize: '0.8rem',
+                                lineHeight: '1.5',
+                            }}>
+                                {t('clickToClose')}
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

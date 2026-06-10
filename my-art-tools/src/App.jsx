@@ -525,6 +525,17 @@ function App() {
 
         localStorage.setItem(AUTH_KEY, JSON.stringify({ token: data.token, user: data.user }));
 
+        // 呼叫 /api/auth/me 取得完整用戶資訊（包含 role）
+        const meResponse = await fetch(`${API_BASE}/auth/me`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${data.token}` }
+        });
+        const meData = await meResponse.json();
+        if (meData.success) {
+          setUser(meData.user);
+          localStorage.setItem(AUTH_KEY, JSON.stringify({ token: data.token, user: meData.user }));
+        }
+
         setShowAuthModal(false);
 
         setAuthError('');
@@ -997,7 +1008,7 @@ function App() {
 
             }}>
 
-              今天畫什麼？
+              繪師驛站
 
             </span>
 
@@ -1340,6 +1351,19 @@ function App() {
               }}>
 
                 👤 {user.displayName || user.username}
+                {user.role === 'admin' && (
+                  <span style={{
+                    marginLeft: '8px',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    backgroundColor: '#ef4444',
+                    color: '#fff',
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                  }}>
+                    ADMIN
+                  </span>
+                )}
 
               </span>
 

@@ -52,7 +52,8 @@ app.use('/api/images', require('./routes/images'));
 // ── Favorites API (MongoDB) ─────────────────────
 const Favorite = require('./models/Favorite');
 const Message = require('./models/Message');
-const { verifyToken } = require('./middleware/auth');
+const User = require('./models/User');
+const { verifyToken, requireAdmin } = require('./middleware/auth');
 
 // GET /api/favorites - 取得用戶收藏列表
 app.get('/api/favorites', verifyToken, async (req, res) => {
@@ -161,6 +162,60 @@ app.post('/api/messages', verifyToken, async (req, res) => {
     res.json({ success: true, message: newMessage });
   } catch (err) {
     console.error('[POST /api/messages] Error:', err);
+    res.status(500).json({ success: false, message: '伺服器發生錯誤' });
+  }
+});
+
+// ── Admin API (管理員專用) ─────────────────────
+// GET /api/admin/users - 取得所有用戶列表（僅管理員）
+app.get('/api/admin/users', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find().select('-passwordHash').sort({ createdAt: -1 });
+    res.json({ success: true, users });
+  } catch (err) {
+    console.error('[GET /api/admin/users] Error:', err);
+    res.status(500).json({ success: false, message: '伺服器發生錯誤' });
+  }
+});
+
+// PUT /api/admin/users/:userId/role - 修改用戶角色（僅管理員）
+app.put('/api/admin/users/:userId/role', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    if (!['user', 'admin'].includes(role)) {
+      return res.status(400).json({ success: false, message: '無效的角色' });
+    }
+
+    const user = await User.findOne({ id: userId });
+    if (!user) {
+      return res.status(404).json({ success: false, message: '用戶不存在' });
+    }
+
+    user.role = role;
+    await user.save();
+
+    res.json({ success: true, user: { id: user.id, username: user.username, role: user.role } });
+  } catch (err) {
+    console.error('[PUT /api/admin/users/:userId/role] Error:', err);
+    res.status(500).json({ success: false, message: '伺服器發生錯誤' });
+  }
+});
+
+// DELETE /api/admin/messages/:messageId - 刪除留言（僅管理員）
+app.delete('/api/admin/messages/:messageId', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    const message = await Message.findByIdAndDelete(messageId);
+    if (!message) {
+      return res.status(404).json({ success: false, message: '留言不存在' });
+    }
+
+    res.json({ success: true, message: '留言已刪除' });
+  } catch (err) {
+    console.error('[DELETE /api/admin/messages/:messageId] Error:', err);
     res.status(500).json({ success: false, message: '伺服器發生錯誤' });
   }
 });

@@ -1,11 +1,12 @@
 /**
  * middleware/auth.js
  * JWT 驗證中介層
- * 
+ *
  * 使用方式：在需要登入保護的路由上加入 verifyToken 中介層
  *   router.get('/protected', verifyToken, (req, res) => { ... });
- * 
- * 對接 MongoDB 後：不需修改此檔案，只需確保 JWT_SECRET 相同即可。
+ *
+ * 使用方式：在需要管理員權限的路由上加入 requireAdmin 中介層
+ *   router.get('/admin', verifyToken, requireAdmin, (req, res) => { ... });
  */
 
 const jwt = require('jsonwebtoken');
@@ -41,4 +42,19 @@ function verifyToken(req, res, next) {
     }
 }
 
-module.exports = { verifyToken, JWT_SECRET };
+/**
+ * requireAdmin
+ * 檢查用戶是否為管理員（role = 'admin'）
+ * 必須在 verifyToken 之後使用
+ */
+function requireAdmin(req, res, next) {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({
+            success: false,
+            message: '需要管理員權限',
+        });
+    }
+    next();
+}
+
+module.exports = { verifyToken, requireAdmin, JWT_SECRET };

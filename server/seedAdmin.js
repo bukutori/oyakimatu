@@ -41,10 +41,7 @@ const ADMIN_CONFIG = {
 async function seedAdmin() {
   try {
     console.log('🔄 連接到 MongoDB Atlas...');
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(MONGODB_URI);
     console.log('✅ MongoDB Atlas 連接成功');
 
     // 檢查是否已存在 admin 帳號

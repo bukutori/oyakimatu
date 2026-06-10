@@ -10,21 +10,24 @@ const userSchema = new mongoose.Schema({
   id: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    index: true
   },
   username: {
     type: String,
     required: true,
     unique: true,
     lowercase: true,
-    trim: true
+    trim: true,
+    index: true
   },
   email: {
     type: String,
     required: true,
     unique: true,
     lowercase: true,
-    trim: true
+    trim: true,
+    index: true
   },
   passwordHash: {
     type: String,
@@ -55,10 +58,5 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
-
-// Create indexes for better query performance
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
-userSchema.index({ id: 1 });
 
 module.exports = mongoose.model('User', userSchema);

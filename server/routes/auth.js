@@ -1,42 +1,25 @@
 /**
  * routes/auth.js
  * 認證相關路由：登入、取得個人資料
- * 
+ *
  * 掛載點（在 server.js 中）：
  *   app.use('/api/auth', require('./routes/auth'));
- * 
+ *
  * ── 路由清單 ─────────────────────────────────────
+ *   POST /api/auth/register → 註冊（回傳 token + 用戶資料）
  *   POST /api/auth/login     → 登入（回傳 token + 用戶資料）
  *   GET  /api/auth/me        → 取得目前登入用戶資料（需 JWT）
- * 
- * ── 對接 MongoDB 時的改動點 ──────────────────────
- *   將 readUsersDB() 替換為：
- *     const user = await User.findOne({ email });  （Mongoose）
  * ─────────────────────────────────────────────────
  */
 
 const express  = require('express');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
-const fs       = require('fs');
-const path     = require('path');
-
+const User     = require('../models/User');
 const { verifyToken, JWT_SECRET } = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
-
-// ── 讀取 JSON 模擬資料庫的工具函式 ───────────────
-const USERS_PATH = path.join(__dirname, '../data/users.json');
-
-function readUsersDB() {
-    try {
-        const raw = fs.readFileSync(USERS_PATH, 'utf-8');
-        return JSON.parse(raw);
-    } catch {
-        return [];
-    }
-}
 
 // ─────────────────────────────────────────────────
 // POST /api/auth/register
@@ -54,11 +37,8 @@ router.post('/register', async (req, res) => {
             });
         }
 
-        // 2. 讀取現有用戶資料
-        const users = readUsersDB();
-
-        // 3. 檢查 email 是否已被註冊
-        const existingUser = users.find(u => u.email === email.toLowerCase().trim());
+        // 2. 檢查 email 是否已被註冊
+        const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
         if (existingUser) {
             return res.status(409).json({
                 success: false,
@@ -66,8 +46,8 @@ router.post('/register', async (req, res) => {
             });
         }
 
-        // 4. 檢查 username 是否已被使用
-        const existingUsername = users.find(u => u.username === username.toLowerCase().trim());
+        // 3. 檢查 username 是否已被使用
+        const existingUsername = await User.findOne({ username: username.toLowerCase().trim() });
         if (existingUsername) {
             return res.status(409).json({
                 success: false,
@@ -75,12 +55,11 @@ router.post('/register', async (req, res) => {
             });
         }
 
-        // 5. 密碼加密
-        const bcrypt = require('bcryptjs');
+        // 4. 密碼加密
         const passwordHash = await bcrypt.hash(password, 10);
 
-        // 6. 建立新用戶
-        const newUser = {
+        // 5. 建立新用戶
+        const newUser = new User({
             id: `usr_${uuidv4()}`,
             username: username.toLowerCase().trim(),
             email: email.toLowerCase().trim(),
@@ -88,20 +67,13 @@ router.post('/register', async (req, res) => {
             displayName: displayName.trim(),
             avatarUrl: '',
             role: 'user',
-            createdAt: new Date().toISOString(),
-        };
+            language: 'zh',
+            createdAt: new Date(),
+        });
 
-        // 7. 寫入 users.json
-        users.push(newUser);
-        fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2), 'utf-8');
+        await newUser.save();
 
-        // 8. 初始化該用戶的收藏資料夾
-        const FAVORITES_PATH = path.join(__dirname, '../data/favorites.json');
-        const favoritesDB = JSON.parse(fs.readFileSync(FAVORITES_PATH, 'utf-8'));
-        favoritesDB[newUser.id] = [];
-        fs.writeFileSync(FAVORITES_PATH, JSON.stringify(favoritesDB, null, 2), 'utf-8');
-
-        // 9. 簽發 JWT
+        // 6. 簽發 JWT
         const payload = {
             id: newUser.id,
             username: newUser.username,
@@ -111,7 +83,7 @@ router.post('/register', async (req, res) => {
             expiresIn: '7d',
         });
 
-        // 10. 回傳 token 與用戶資料
+        // 7. 回傳 token 與用戶資料
         const safeUser = {
             id: newUser.id,
             username: newUser.username,
@@ -154,9 +126,8 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // 2. 查找用戶（對接 MongoDB：User.findOne({ email })）
-        const users = readUsersDB();
-        const user  = users.find(u => u.email === email.toLowerCase().trim());
+        // 2. 查找用戶
+        const user = await User.findOne({ email: email.toLowerCase().trim() });
 
         if (!user) {
             return res.status(401).json({
@@ -185,7 +156,6 @@ router.post('/login', async (req, res) => {
         });
 
         // 5. 回傳 token 與去敏的用戶資料
-        //    前端存入 localStorage: { token, user }
         const safeUser = {
             id:          user.id,
             username:    user.username,
@@ -216,11 +186,10 @@ router.post('/login', async (req, res) => {
 // GET /api/auth/me   （需要 JWT 保護）
 // Header: Authorization: Bearer <token>
 // ─────────────────────────────────────────────────
-router.get('/me', verifyToken, (req, res) => {
+router.get('/me', verifyToken, async (req, res) => {
     try {
         // req.user 由 verifyToken 中介層注入
-        const users   = readUsersDB();
-        const user    = users.find(u => u.id === req.user.id);
+        const user = await User.findOne({ id: req.user.id });
 
         if (!user) {
             return res.status(404).json({ success: false, message: '用戶不存在' });

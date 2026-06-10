@@ -1,6 +1,6 @@
 /**
  * server.js
- * 畫師工具箱後端 API Server (Express + JSON 模擬資料庫)
+ * 畫師工具箱後端 API Server (Express + MongoDB Atlas)
  */
 const path = require('path');
 // 確保優先讀取本地 .env，如果沒有（如 Render 環境），則直接使用系統注入的環境變數
@@ -9,10 +9,30 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs');
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// ── MongoDB Connection ─────────────────────────────
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  console.error('❌ MONGODB_URI is not defined in .env file');
+  process.exit(1);
+}
+
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log('✅ MongoDB Atlas 連接成功');
+})
+.catch((err) => {
+  console.error('❌ MongoDB Atlas 連接失敗:', err.message);
+  process.exit(1);
+});
 
 // ── Middleware ─────────────────────────────────────
 app.use(cors({
@@ -29,56 +49,142 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/images', require('./routes/images'));
 
-// ── Favorites API (模擬資料庫) ─────────────────────
-const FAVORITES_PATH = path.join(__dirname, 'data/favorites.json');
+// ── Favorites API (MongoDB) ─────────────────────
+const Favorite = require('./models/Favorite');
+const Message = require('./models/Message');
+const { verifyToken } = require('./middleware/auth');
 
-function readFavoritesDB() {
+// GET /api/favorites - 取得用戶收藏列表
+app.get('/api/favorites', verifyToken, async (req, res) => {
   try {
-    const raw = fs.readFileSync(FAVORITES_PATH, 'utf-8');
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-}
+    const userId = req.user.id;
+    let favorite = await Favorite.findOne({ userId });
 
-function writeFavoritesDB(data) {
-  // 確保 data 資料夾存在
-  const dir = path.dirname(FAVORITES_PATH);
-  if (!fs.existsSync(dir)){
-      fs.mkdirSync(dir, { recursive: true });
+    if (!favorite) {
+      // 如果用戶沒有收藏記錄，建立一個空的
+      favorite = new Favorite({ userId, images: [] });
+      await favorite.save();
+    }
+
+    res.json({ success: true, images: favorite.images });
+  } catch (err) {
+    console.error('[GET /api/favorites] Error:', err);
+    res.status(500).json({ success: false, message: '伺服器發生錯誤' });
   }
-  fs.writeFileSync(FAVORITES_PATH, JSON.stringify(data, null, 2), 'utf-8');
-}
+});
+
+// POST /api/favorites - 新增收藏
+app.post('/api/favorites', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { image } = req.body;
+
+    if (!image) {
+      return res.status(400).json({ success: false, message: '請提供圖片資料' });
+    }
+
+    let favorite = await Favorite.findOne({ userId });
+
+    if (!favorite) {
+      favorite = new Favorite({ userId, images: [] });
+    }
+
+    // 檢查是否已經收藏
+    const exists = favorite.images.some(img => img.id === image.id);
+    if (exists) {
+      return res.status(409).json({ success: false, message: '此圖片已收藏' });
+    }
+
+    favorite.images.push(image);
+    await favorite.save();
+
+    res.json({ success: true, images: favorite.images });
+  } catch (err) {
+    console.error('[POST /api/favorites] Error:', err);
+    res.status(500).json({ success: false, message: '伺服器發生錯誤' });
+  }
+});
+
+// DELETE /api/favorites/:imageId - 刪除收藏
+app.delete('/api/favorites/:imageId', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { imageId } = req.params;
+
+    let favorite = await Favorite.findOne({ userId });
+
+    if (!favorite) {
+      return res.status(404).json({ success: false, message: '找不到收藏記錄' });
+    }
+
+    favorite.images = favorite.images.filter(img => img.id !== imageId);
+    await favorite.save();
+
+    res.json({ success: true, images: favorite.images });
+  } catch (err) {
+    console.error('[DELETE /api/favorites] Error:', err);
+    res.status(500).json({ success: false, message: '伺服器發生錯誤' });
+  }
+});
+
+// ── Messages API (討論版) ─────────────────────
+// GET /api/messages - 取得所有留言
+app.get('/api/messages', async (req, res) => {
+  try {
+    const messages = await Message.find().sort({ createdAt: -1 }).limit(100);
+    res.json({ success: true, messages });
+  } catch (err) {
+    console.error('[GET /api/messages] Error:', err);
+    res.status(500).json({ success: false, message: '伺服器發生錯誤' });
+  }
+});
+
+// POST /api/messages - 新增留言
+app.post('/api/messages', verifyToken, async (req, res) => {
+  try {
+    const { artistNickname, content } = req.body;
+    const userId = req.user.id;
+
+    if (!artistNickname || !content) {
+      return res.status(400).json({ success: false, message: '請填寫所有欄位' });
+    }
+
+    const newMessage = new Message({
+      artistNickname,
+      content,
+      userId,
+      createdAt: new Date()
+    });
+
+    await newMessage.save();
+
+    res.json({ success: true, message: newMessage });
+  } catch (err) {
+    console.error('[POST /api/messages] Error:', err);
+    res.status(500).json({ success: false, message: '伺服器發生錯誤' });
+  }
+});
 
 // ── Health Check + 秘密管理員後台 ────────────────────────────────────
-app.get('/', (req, res) => {
-  const fs = require('fs');
-  const path = require('path');
-  const usersFilePath = path.join(__dirname, 'data/users.json');
+app.get('/', async (req, res) => {
+  const User = require('./models/User');
 
   let userRowsHtml = '';
   let totalUsers = 0;
 
   try {
-    // 🛡️ 防禦性改進：不管檔案在不在，都用 try...catch 包死它，絕對不讓伺服器崩潰！
-    if (fs.existsSync(usersFilePath)) {
-      const rawData = fs.readFileSync(usersFilePath, 'utf-8');
-      const users = JSON.parse(rawData || '[]');
-      totalUsers = users.length;
+    const users = await User.find().select('username language').sort({ createdAt: -1 });
+    totalUsers = users.length;
 
-      if (totalUsers === 0) {
-        userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #6272a4;">目前尚無註冊使用者</td></tr>`;
-      } else {
-        userRowsHtml = users.map(user => `
-          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-            <td style="padding: 10px; font-weight: bold; color: #fff;">${user.username}</td>
-            <td style="padding: 10px; color: #f1fa8c; text-align: right;">${user.language || 'zh'}</td>
-          </tr>
-        `).join('');
-      }
+    if (totalUsers === 0) {
+      userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #6272a4;">目前尚無註冊使用者</td></tr>`;
     } else {
-      // 💡 如果雲端沒有 users.json，就溫柔地顯示這行，而不是直接當機！
-      userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #6272a4;">雲端尚未建立 users.json 檔案 (目前 0 人)</td></tr>`;
+      userRowsHtml = users.map(user => `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="padding: 10px; font-weight: bold; color: #fff;">${user.username}</td>
+          <td style="padding: 10px; color: #f1fa8c; text-align: right;">${user.language || 'zh'}</td>
+        </tr>
+      `).join('');
     }
   } catch (err) {
     userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #ff5555;">讀取發生錯誤：${err.message}</td></tr>`;

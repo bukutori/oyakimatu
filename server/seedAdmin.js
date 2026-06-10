@@ -1,6 +1,6 @@
 /**
  * seedAdmin.js
- * 建立測試用管理員帳號的 Seed Script
+ * 建立測sd試用管理員帳號的 Seed Script
  *
  * 使用方式：
  *   node seedAdmin.js

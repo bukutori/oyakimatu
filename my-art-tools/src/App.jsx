@@ -8,6 +8,8 @@ import ColorPalette from './ColorPalette';
 
 import ImageBrowser from './ImageBrowser';
 
+import AdminPanel from './AdminPanel';
+
 import logoImg from './img/144.png';
 
 import TRANSLATIONS from './translations';
@@ -50,7 +52,6 @@ const NAV_TABS = [
 
   { id: 'palette', labelKey: 'palette' },
 
-  { id: 'my-site', labelKey: 'mySite', external: true, url: 'https://bukutori.github.io/devfolio-1.0.0/' }
 
 ];
 
@@ -365,6 +366,9 @@ function App() {
 
   });
 
+  // 確保 savedImages 總是陣列
+  const safeSavedImages = Array.isArray(savedImages) ? savedImages : [];
+
 
 
   // 收藏狀態變更時同步至 localStorage（未登入時）
@@ -640,7 +644,7 @@ function App() {
 
     
 
-    const alreadySaved = savedImages.some(item => String(item.id) === String(img.id));
+    const alreadySaved = safeSavedImages.some(item => String(item.id) === String(img.id));
 
     const action = alreadySaved ? 'remove' : 'add';
 
@@ -649,14 +653,15 @@ function App() {
     // 先更新本地狀態
 
     setSavedImages(prev => {
-
+      const prevArray = Array.isArray(prev) ? prev : [];
+      
       if (alreadySaved) {
 
-        return prev.filter(item => String(item.id) !== String(img.id));
+        return prevArray.filter(item => String(item.id) !== String(img.id));
 
       }
 
-      return [...prev, {
+      return [...prevArray, {
 
         id: img.id,
 
@@ -678,7 +683,7 @@ function App() {
 
     syncFavoriteToBackend(img, action);
 
-  }, [user, savedImages, syncFavoriteToBackend]);
+  }, [user, safeSavedImages, syncFavoriteToBackend]);
 
 
 
@@ -796,7 +801,7 @@ function App() {
 
           <ImageBrowser
 
-            savedImages={savedImages}
+            savedImages={safeSavedImages}
 
             toggleFavorite={toggleFavorite}
 
@@ -816,7 +821,7 @@ function App() {
 
         return <FavoritesGallery
 
-          savedImages={savedImages}
+          savedImages={safeSavedImages}
 
           toggleFavorite={toggleFavorite}
 
@@ -838,7 +843,7 @@ function App() {
 
           <SketchWall
 
-            savedImages={savedImages}
+            savedImages={safeSavedImages}
 
             toggleFavorite={toggleFavorite}
 
@@ -865,6 +870,14 @@ function App() {
       case 'palette':
 
         return <ColorPalette theme={isDarkMode ? 'dark' : 'light'} language={language} />;
+
+
+
+      // ── 管理員面板 ──────────────────────────────────────
+
+      case 'admin':
+
+        return <AdminPanel token={token} theme={isDarkMode ? 'dark' : 'light'} onClose={() => setActiveView('explore')} />;
 
 
 
@@ -1086,7 +1099,7 @@ function App() {
 
                 {/* 收藏數量徽章 */}
 
-                {tab.id === 'favorites' && savedImages.length > 0 && (
+                {tab.id === 'favorites' && safeSavedImages && safeSavedImages.length > 0 && (
 
                   <span style={{
 
@@ -1108,7 +1121,7 @@ function App() {
 
                   }}>
 
-                    {savedImages.length}
+                    {safeSavedImages.length}
 
                   </span>
 
@@ -1911,11 +1924,182 @@ function App() {
 
             </div>
 
+            {/* 管理員選項 - 僅管理員可見 */}
+
+            {user && user.role === 'admin' && (
+
+              <div style={{
+
+                marginTop: '16px',
+
+                padding: '16px',
+
+                backgroundColor: isLight ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+
+                borderRadius: '12px',
+
+                border: isLight ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+
+              }}>
+
+                <div style={{
+
+                  fontSize: '1rem',
+
+                  fontWeight: '600',
+
+                  color: currentTheme.text,
+
+                  marginBottom: '12px',
+
+                }}>
+
+                   管理員功能
+
+                </div>
+
+                <button
+
+                  onClick={() => {
+
+                    setShowSettingsModal(false);
+
+                    setActiveView('admin');
+
+                  }}
+
+                  style={{
+
+                    width: '100%',
+
+                    padding: '12px',
+
+                    borderRadius: '8px',
+
+                    border: 'none',
+
+                    backgroundColor: '#ef4444',
+
+                    color: '#fff',
+
+                    fontSize: '0.9rem',
+
+                    fontWeight: '600',
+
+                    cursor: 'pointer',
+
+                    transition: 'background-color 0.2s',
+
+                  }}
+
+                  onMouseOver={(e) => e.target.style.backgroundColor = '#dc2626'}
+
+                  onMouseOut={(e) => e.target.style.backgroundColor = '#ef4444'}
+
+                >
+
+                  開啟管理員面板
+
+                </button>
+
+              </div>
+
+            )}
+
           </div>
 
         </div>
 
       )}
+
+      {/* 頁尾 */}
+      <footer style={{
+        padding: '40px 20px',
+        borderTop: `1px solid ${currentTheme.border}`,
+        backgroundColor: currentTheme.bg,
+        color: currentTheme.text,
+        fontSize: '0.9rem',
+      }}>
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '30px',
+        }}>
+          {/* 關於 */}
+          <div>
+            <h4 style={{
+              margin: '0 0 15px 0',
+              fontSize: '1.1rem',
+              fontWeight: '600',
+              color: isLight ? '#3b82f6' : '#fb7185'
+            }}>
+              關於
+            </h4>
+            <p style={{
+              margin: '0',
+              lineHeight: '1.6',
+              opacity: 0.8
+            }}>
+              藝術創作工具箱，提供繪畫靈感、色彩搭配、速寫練習等功能。
+            </p>
+          </div>
+
+          {/* 連結 */}
+          <div>
+            <h4 style={{
+              margin: '0 0 15px 0',
+              fontSize: '1.1rem',
+              fontWeight: '600',
+              color: isLight ? '#3b82f6' : '#fb7185'
+            }}>
+              連結
+            </h4>
+            <ul style={{
+              margin: '0',
+              padding: 0,
+              listStyle: 'none',
+            }}>
+              <li style={{ marginBottom: '8px' }}>
+                <a
+                  href="https://bukutori.github.io/devfolio-1.0.0/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: currentTheme.text,
+                    textDecoration: 'none',
+                    transition: 'opacity 0.2s',
+                  }}
+                  onMouseOver={(e) => e.target.style.opacity = '0.7'}
+                  onMouseOut={(e) => e.target.style.opacity = '1'}
+                >
+                  我的個人網站
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* 版權 */}
+          <div>
+            <h4 style={{
+              margin: '0 0 15px 0',
+              fontSize: '1.1rem',
+              fontWeight: '600',
+              color: isLight ? '#3b82f6' : '#fb7185'
+            }}>
+              版權
+            </h4>
+            <p style={{
+              margin: '0',
+              lineHeight: '1.6',
+              opacity: 0.8
+            }}>
+              © 2024 藝術創作工具箱. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
 
     </div>
 

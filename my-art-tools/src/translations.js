@@ -44,6 +44,8 @@ const TRANSLATIONS = {
 
     palette: '主題色票',
 
+    admin: '管理員',
+
     mySite: '我的網站',
 
     autoTimeModeEnabled: '已啟用自動時間模式',
@@ -235,6 +237,8 @@ const TRANSLATIONS = {
     inspiration: 'インスピレーション抽選',
 
     palette: 'テーマパレット',
+
+    admin: '管理者',
 
     mySite: 'マイサイト',
 

@@ -50,157 +50,141 @@ function writeFavoritesDB(data) {
   fs.writeFileSync(FAVORITES_PATH, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-// GET /api/favorites - 取得用戶收藏列表
-app.get('/api/favorites', (req, res) => {
-  try {
-    const userId = req.query.userId;
-    if (!userId) {
-      return res.status(400).json({ success: false, message: '需要 userId 參數' });
-    }
-
-    const db = readFavoritesDB();
-    const userFavorites = db[userId] || [];
-
-    res.json({ success: true, favorites: userFavorites });
-  } catch (err) {
-    console.error('[GET /api/favorites] Error:', err);
-    res.status(500).json({ success: false, message: '伺服器錯誤' });
-  }
-});
-
-// POST /api/favorites - 新增收藏
-app.post('/api/favorites', (req, res) => {
-  try {
-    const { userId, image } = req.body;
-    if (!userId || !image) {
-      return res.status(400).json({ success: false, message: '需要 userId 和 image' });
-    }
-
-    const db = readFavoritesDB();
-    if (!db[userId]) {
-      db[userId] = [];
-    }
-
-    // 檢查是否已收藏
-    const alreadySaved = db[userId].some(item => String(item.id) === String(image.id));
-    if (alreadySaved) {
-      return res.json({ success: true, message: '已收藏', favorites: db[userId] });
-    }
-
-    // 新增收藏
-    db[userId].push({
-      id: image.id,
-      author: image.author || '未知作者',
-      url: image.url || `https://picsum.photos/id/${image.id}/600/450`,
-      isCustom: image.isCustom || false,
-      savedAt: Date.now(),
-    });
-
-    writeFavoritesDB(db);
-    res.json({ success: true, message: '收藏成功', favorites: db[userId] });
-  } catch (err) {
-    console.error('[POST /api/favorites] Error:', err);
-    res.status(500).json({ success: false, message: '伺服器錯誤' });
-  }
-});
-
-// DELETE /api/favorites/:id - 移除收藏
-app.delete('/api/favorites/:id', (req, res) => {
-  try {
-    const { userId } = req.body;
-    const imageId = req.params.id;
-
-    if (!userId) {
-      return res.status(400).json({ success: false, message: '需要 userId' });
-    }
-
-    const db = readFavoritesDB();
-    if (!db[userId]) {
-      return res.json({ success: true, favorites: [] });
-    }
-
-    db[userId] = db[userId].filter(item => String(item.id) !== String(imageId));
-    writeFavoritesDB(db);
-
-    res.json({ success: true, message: '移除成功', favorites: db[userId] });
-  } catch (err) {
-    console.error('[DELETE /api/favorites] Error:', err);
-    res.status(500).json({ success: false, message: '伺服器錯誤' });
-  }
-});
-
-// ── Health Check ────────────────────────────────────
+// ── Health Check + 秘密管理員後台 ────────────────────────────────────
 app.get('/', (req, res) => {
-    res.send(`
-        <!DOCTYPE html>
-        <html lang="zh-TW">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>畫師工具箱 API 🚀</title>
-            <style>
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    background: linear-gradient(135deg, #1e1e2f 0%, #252542 100%);
-                    color: #fff;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    height: 100vh;
-                    margin: 0;
-                }
-                .card {
-                    background: rgba(255, 255, 255, 0.05);
-                    padding: 30px;
-                    border-radius: 16px;
-                    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-                    backdrop-filter: blur(8px);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    text-align: center;
-                    max-width: 450px;
-                    width: 90%;
-                }
-                h1 { color: #ff79c6; margin-bottom: 10px; font-size: 24px; }
-                p { color: #a9a9b3; font-size: 14px; line-height: 1.6; }
-                .status {
-                    display: inline-block;
-                    background: #50fa7b;
-                    color: #1e1e2f;
-                    padding: 5px 12px;
-                    border-radius: 20px;
-                    font-weight: bold;
-                    font-size: 12px;
-                    margin: 15px 0;
-                }
-                .endpoint-box {
-                    background: rgba(0,0,0,0.2);
-                    padding: 12px;
-                    border-radius: 8px;
-                    text-align: left;
-                    font-family: monospace;
-                    font-size: 13px;
-                    color: #f1fa8c;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <h1>🎨 畫師工具箱 API</h1>
-                <div class="status">● SERVER RUNNING</div>
-                <p>後端伺服器已成功部署至 Render！目前正穩定提供靈感抽籤與真人動作圖庫數據支援。</p>
-                <hr style="border: 0.5px solid rgba(255,255,255,0.1); margin: 20px 0;">
-                <div class="endpoint-box">
-                    📡 核心節點：<br>
-                    • 圖片 API: /api/images<br>
-                    • 收藏庫: /api/favorites
-                </div>
-            </div>
-        </body>
-        </html>
-    `);
-});
+  const fs = require('fs');
+  const path = require('path');
+  const usersFilePath = path.join(__dirname, 'data/users.json');
 
-// ── Start Server ───────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`🚀 Server 運行在端口 ${PORT}`);
+  let userRowsHtml = '';
+  let totalUsers = 0;
+
+  // 1. 在後端偷偷讀取使用者資料
+  if (fs.existsSync(usersFilePath)) {
+    try {
+      const rawData = fs.readFileSync(usersFilePath, 'utf-8');
+      const users = JSON.parse(rawData || '[]');
+      totalUsers = users.length;
+
+      if (totalUsers === 0) {
+        userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #6272a4;">目前尚無註冊使用者</td></tr>`;
+      } else {
+        // 2. 自動把每一位使用者的帳號轉成表格 HTML 列（隱私安全：絕對不抓密碼欄位！）
+        userRowsHtml = users.map(user => `
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <td style="padding: 10px; font-weight: bold; color: #fff;">${user.username}</td>
+            <td style="padding: 10px; color: #f1fa8c; text-align: right;">${user.language || 'zh'}</td>
+          </tr>
+        `).join('');
+      }
+    } catch (err) {
+      userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #ff5555;">資料讀取失敗</td></tr>`;
+    }
+  } else {
+    userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #6272a4;">尚未建立資料夾</td></tr>`;
+  }
+
+  // 3. 把資料直接注入到原本漂亮的網頁畫面中！
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="zh-TW">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>畫師工具箱 API 🚀</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #1e1e2f 0%, #252542 100%);
+                color: #fff;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                margin: 0;
+                padding: 20px;
+                box-sizing: border-box;
+            }
+            .card {
+                background: rgba(255, 255, 255, 0.05);
+                padding: 30px;
+                border-radius: 16px;
+                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+                backdrop-filter: blur(8px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                text-align: center;
+                max-width: 450px;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+            .admin-box {
+                background: rgba(0, 0, 0, 0.3);
+                padding: 20px;
+                border-radius: 12px;
+                text-align: left;
+                border: 1px solid rgba(255,255,255,0.05);
+                width: 100%;
+                max-width: 450px;
+                box-sizing: border-box;
+            }
+            h1 { color: #ff79c6; margin-bottom: 10px; font-size: 24px; }
+            h2 { color: #8be9fd; margin: 0 0 15px 0; font-size: 16px; display: flex; justify-content: space-between; }
+            p { color: #a9a9b3; font-size: 14px; line-height: 1.6; }
+            .status {
+                display: inline-block;
+                background: #50fa7b;
+                color: #1e1e2f;
+                padding: 5px 12px;
+                border-radius: 20px;
+                font-weight: bold;
+                font-size: 12px;
+                margin: 15px 0;
+            }
+            .endpoint-box {
+                background: rgba(0,0,0,0.2);
+                padding: 12px;
+                border-radius: 8px;
+                text-align: left;
+                font-family: monospace;
+                font-size: 13px;
+                color: #f1fa8c;
+                margin-top: 15px;
+            }
+            table { width: 100%; border-collapse: collapse; font-size: 14px; }
+            th { border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 8px; color: #ffb86c; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>🎨 畫師工具箱 API</h1>
+            <div class="status">● SERVER RUNNING</div>
+            <p>後端伺服器已成功部署至 Render！目前正穩定提供靈感抽籤與真人動作圖庫數據支援。</p>
+            <div class="endpoint-box">
+                📡 核心節點：<br>
+                • 圖片 API: /api/images<br>
+                • 收藏庫: /api/favorites
+            </div>
+        </div>
+
+        <div class="admin-box">
+            <h2>
+              <span>🎖️ 雲端註冊名單 (Admin)</span>
+              <span style="color: #ff79c6;">共 ${totalUsers} 人</span>
+            </h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">帳號名稱 (Username)</th>
+                        <th style="text-align: right;">偏好語系</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${userRowsHtml}
+                </tbody>
+            </table>
+        </div>
+    </body>
+    </html>
+  `);
 });

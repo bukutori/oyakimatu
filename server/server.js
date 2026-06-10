@@ -59,9 +59,9 @@ app.get('/', (req, res) => {
   let userRowsHtml = '';
   let totalUsers = 0;
 
-  // 1. 在後端偷偷讀取使用者資料
-  if (fs.existsSync(usersFilePath)) {
-    try {
+  try {
+    // 🛡️ 防禦性改進：不管檔案在不在，都用 try...catch 包死它，絕對不讓伺服器崩潰！
+    if (fs.existsSync(usersFilePath)) {
       const rawData = fs.readFileSync(usersFilePath, 'utf-8');
       const users = JSON.parse(rawData || '[]');
       totalUsers = users.length;
@@ -69,7 +69,6 @@ app.get('/', (req, res) => {
       if (totalUsers === 0) {
         userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #6272a4;">目前尚無註冊使用者</td></tr>`;
       } else {
-        // 2. 自動把每一位使用者的帳號轉成表格 HTML 列（隱私安全：絕對不抓密碼欄位！）
         userRowsHtml = users.map(user => `
           <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
             <td style="padding: 10px; font-weight: bold; color: #fff;">${user.username}</td>
@@ -77,11 +76,12 @@ app.get('/', (req, res) => {
           </tr>
         `).join('');
       }
-    } catch (err) {
-      userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #ff5555;">資料讀取失敗</td></tr>`;
+    } else {
+      // 💡 如果雲端沒有 users.json，就溫柔地顯示這行，而不是直接當機！
+      userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #6272a4;">雲端尚未建立 users.json 檔案 (目前 0 人)</td></tr>`;
     }
-  } else {
-    userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #6272a4;">尚未建立資料夾</td></tr>`;
+  } catch (err) {
+    userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #ff5555;">讀取發生錯誤：${err.message}</td></tr>`;
   }
 
   // 3. 把資料直接注入到原本漂亮的網頁畫面中！
@@ -187,4 +187,8 @@ app.get('/', (req, res) => {
     </body>
     </html>
   `);
+});
+// ── Start Server ───────────────────────────────────
+app.listen(PORT, () => {
+  console.log(`🚀 Server 運行在端口 ${PORT}`);
 });

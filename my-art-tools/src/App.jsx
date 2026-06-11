@@ -348,29 +348,58 @@ function App() {
 
 
 
-  // 從 localStorage 讀取認證資訊
+  // 從 localStorage 讀取認證資訊並載入雲端資料
 
   useEffect(() => {
 
-    try {
+    const loadAuthAndCloudData = async () => {
+      try {
 
-      const raw = localStorage.getItem(AUTH_KEY);
+        const raw = localStorage.getItem(AUTH_KEY);
 
-      if (raw) {
+        if (raw) {
 
-        const { token: savedToken, user: savedUser } = JSON.parse(raw);
+          const { token: savedToken, user: savedUser } = JSON.parse(raw);
 
-        setToken(savedToken);
+          setToken(savedToken);
 
-        setUser(savedUser);
+          setUser(savedUser);
+
+          // 載入雲端資料（收藏、語言、主題設定）
+          const meResponse = await fetch(`${API_BASE}/auth/me`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${savedToken}` }
+          });
+          const meData = await meResponse.json();
+          if (meData.success) {
+            setUser(meData.user);
+            localStorage.setItem(AUTH_KEY, JSON.stringify({ token: savedToken, user: meData.user }));
+
+            // 初始化雲端同步的狀態
+            if (meData.user.favorites && Array.isArray(meData.user.favorites)) {
+              setSavedImages(meData.user.favorites);
+            }
+            if (meData.user.language) {
+              setLanguage(meData.user.language);
+            }
+            if (meData.user.themeSettings) {
+              // 如果有時間感知背景設定，可以在此處理
+              if (meData.user.themeSettings.isDarkMode !== undefined) {
+                setIsDarkMode(meData.user.themeSettings.isDarkMode);
+              }
+            }
+          }
+
+        }
+
+      } catch (e) {
+
+        console.error('[Auth] 無法讀取 localStorage 或載入雲端資料', e);
 
       }
+    };
 
-    } catch (e) {
-
-      console.error('[Auth] 無法讀取 localStorage', e);
-
-    }
+    loadAuthAndCloudData();
 
   }, []);
 
@@ -640,7 +669,11 @@ function App() {
 
     localStorage.removeItem(AUTH_KEY);
 
+    // 重置所有狀態到預設值
     setSavedImages([]);
+    setLanguage('zh');
+    setIsDarkMode(false);
+    setAutoTimeMode(false);
 
   };
 

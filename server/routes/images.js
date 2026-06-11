@@ -6,6 +6,8 @@
 const express = require('express');
 const axios = require('axios');
 const router = express.Router();
+const PhotoAccess = require('../models/PhotoAccess');
+const { verifyToken } = require('../middleware/auth');
 
 // ── 記憶體快取機制 ─────────────────────────────────────
 const CACHE_DURATION = 60 * 60 * 1000; // 1 小時快取時間（毫秒）
@@ -76,6 +78,30 @@ router.get('/', async (req, res) => {
     const { category = '全部', per_page = 12, page = 1 } = req.query;
 
     console.log(`[GET /api/images] Received request: category=${category}, per_page=${per_page}, page=${page}`);
+
+    // 追蹤照片存取記錄（如果有使用者資訊）
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7);
+        const jwt = require('jsonwebtoken');
+        const { JWT_SECRET } = require('../middleware/auth');
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        // 記錄存取
+        const photoAccess = new PhotoAccess({
+          userId: decoded.id,
+          username: decoded.username,
+          photoId: `category_${category}_page_${page}`,
+          photoCategory: category,
+          accessType: 'view',
+          timestamp: new Date()
+        });
+        await photoAccess.save();
+      } catch (err) {
+        console.log('[GET /api/images] 無法追蹤存取記錄:', err.message);
+      }
+    }
 
     // 取得 Unsplash API Key
     const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;

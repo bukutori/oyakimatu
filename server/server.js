@@ -175,6 +175,39 @@ app.get('/api/admin/users', verifyToken, requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/admin/photo-access - 取得照片存取統計（僅管理員）
+app.get('/api/admin/photo-access', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const PhotoAccess = require('./models/PhotoAccess');
+    const accessLogs = await PhotoAccess.find().sort({ timestamp: -1 }).limit(100);
+    const totalAccess = await PhotoAccess.countDocuments();
+    
+    // 統計各類別存取次數
+    const categoryStats = await PhotoAccess.aggregate([
+      { $group: { _id: '$photoCategory', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+
+    // 統計使用者存取次數
+    const userStats = await PhotoAccess.aggregate([
+      { $group: { _id: '$username', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+
+    res.json({ 
+      success: true, 
+      accessLogs,
+      totalAccess,
+      categoryStats,
+      userStats
+    });
+  } catch (err) {
+    console.error('[GET /api/admin/photo-access] Error:', err);
+    res.status(500).json({ success: false, message: '伺服器發生錯誤' });
+  }
+});
+
 // PUT /api/admin/users/:userId/role - 修改用戶角色（僅管理員）
 app.put('/api/admin/users/:userId/role', verifyToken, requireAdmin, async (req, res) => {
   try {
@@ -220,9 +253,13 @@ app.delete('/api/admin/messages/:messageId', verifyToken, requireAdmin, async (r
 // ── Health Check + 秘密管理員後台 ────────────────────────────────────
 app.get('/', async (req, res) => {
   const User = require('./models/User');
+  const PhotoAccess = require('./models/PhotoAccess');
 
   let userRowsHtml = '';
   let totalUsers = 0;
+  let photoAccessHtml = '';
+  let totalPhotoAccess = 0;
+  let categoryStatsHtml = '';
 
   try {
     const users = await User.find().select('username language').sort({ createdAt: -1 });
@@ -238,8 +275,44 @@ app.get('/', async (req, res) => {
         </tr>
       `).join('');
     }
+
+    // 照片存取統計
+    const accessLogs = await PhotoAccess.find().sort({ timestamp: -1 }).limit(10);
+    totalPhotoAccess = await PhotoAccess.countDocuments();
+
+    if (totalPhotoAccess === 0) {
+      photoAccessHtml = `<tr><td colSpan="3" style="padding: 15px; text-align: center; color: #6272a4;">目前尚無照片存取記錄</td></tr>`;
+    } else {
+      photoAccessHtml = accessLogs.map(log => `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="padding: 10px; color: #fff;">${log.username}</td>
+          <td style="padding: 10px; color: #8be9fd;">${log.photoCategory || '未知'}</td>
+          <td style="padding: 10px; color: #6272a4; text-align: right; font-size: 12px;">${new Date(log.timestamp).toLocaleString('zh-TW')}</td>
+        </tr>
+      `).join('');
+    }
+
+    // 分類統計
+    const categoryStats = await PhotoAccess.aggregate([
+      { $group: { _id: '$photoCategory', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]);
+
+    if (categoryStats.length === 0) {
+      categoryStatsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #6272a4;">目前尚無統計資料</td></tr>`;
+    } else {
+      categoryStatsHtml = categoryStats.map(stat => `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="padding: 10px; color: #fff;">${stat._id || '未知'}</td>
+          <td style="padding: 10px; color: #50fa7b; text-align: right; font-weight: bold;">${stat.count}</td>
+        </tr>
+      `).join('');
+    }
+
   } catch (err) {
     userRowsHtml = `<tr><td colSpan="2" style="padding: 15px; text-align: center; color: #ff5555;">讀取發生錯誤：${err.message}</td></tr>`;
+    photoAccessHtml = `<tr><td colSpan="3" style="padding: 15px; text-align: center; color: #ff5555;">讀取發生錯誤：${err.message}</td></tr>`;
   }
 
   // 3. 把資料直接注入到原本漂亮的網頁畫面中！
@@ -339,6 +412,42 @@ app.get('/', async (req, res) => {
                 </thead>
                 <tbody>
                     ${userRowsHtml}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="admin-box">
+            <h2>
+              <span>📸 照片存取記錄 (Photo Access)</span>
+              <span style="color: #50fa7b;">共 ${totalPhotoAccess} 次</span>
+            </h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">使用者</th>
+                        <th style="text-align: left;">分類</th>
+                        <th style="text-align: right;">時間</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${photoAccessHtml}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="admin-box">
+            <h2>
+              <span>📊 分類統計 (Category Stats)</span>
+            </h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">分類名稱</th>
+                        <th style="text-align: right;">存取次數</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${categoryStatsHtml}
                 </tbody>
             </table>
         </div>

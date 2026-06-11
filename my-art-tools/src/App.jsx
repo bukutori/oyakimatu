@@ -1051,12 +1051,6 @@ function App() {
 
             maxWidth: 'calc(100% - 200px)',
 
-            '@media (max-width: 768px)': {
-
-              maxWidth: 'calc(100% - 120px)',
-
-            },
-
           }}>
 
             {NAV_TABS.map(tab => (
@@ -1521,12 +1515,6 @@ function App() {
         padding: '32px 24px 60px',
 
         boxSizing: 'border-box',
-
-        '@media (max-width: 768px)': {
-
-          padding: '20px 16px 40px',
-
-        },
 
       }}>
 
@@ -2088,7 +2076,7 @@ function App() {
               fontWeight: '600',
               color: isLight ? '#3b82f6' : '#fb7185'
             }}>
-              版權
+              關於畫師驛站
             </h4>
             <p style={{
               margin: '0',
@@ -2097,6 +2085,35 @@ function App() {
             }}>
               © 2024 藝術創作工具箱. All rights reserved.
             </p>
+          </div>
+
+          <div className="footer-section">
+            <h4 style={{
+              margin: '0 0 15px 0',
+              fontSize: '1.1rem',
+              fontWeight: '600',
+              color: isLight ? '#3b82f6' : '#fb7185',
+              letterSpacing: '1px'
+            }}>
+              驛站連線狀態
+            </h4>
+            <p style={{
+              margin: '0 0 10px 0',
+              lineHeight: '1.7',
+              opacity: 0.8
+            }}>
+              🟢 雲端資料庫（MongoDB）已同步連線。歡迎前往交流討論版留下一期一會的創作足跡！
+            </p>
+            <span style={{
+              display: 'inline-block',
+              fontSize: '0.8rem',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              backgroundColor: isLight ? '#e0f2fe' : '#311523',
+              color: isLight ? '#0369a1' : '#f43f5e',
+              fontWeight: '500'
+            }}>
+            </span>
           </div>
         </div>
       </footer>

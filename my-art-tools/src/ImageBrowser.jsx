@@ -755,23 +755,11 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                         display: 'grid',
 
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
 
                         gap: '14px',
 
                         minHeight: '240px',
-
-                        '@media (min-width: 768px)': {
-
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-
-                        },
-
-                        '@media (min-width: 1024px)': {
-
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-
-                        },
 
                     }}>
 

@@ -51,6 +51,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: 'zh'
   },
+  favorites: [{
+    id: String,
+    author: String,
+    url: String,
+    isCustom: { type: Boolean, default: false }
+  }],
+  themeSettings: {
+    type: Object,
+    default: {}
+  },
   createdAt: {
     type: Date,
     default: Date.now

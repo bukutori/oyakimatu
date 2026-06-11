@@ -155,7 +155,7 @@ router.post('/login', async (req, res) => {
             expiresIn: '7d', // 7 天有效期
         });
 
-        // 5. 回傳 token 與去敏的用戶資料
+        // 5. 回傳 token 與去敏的用戶資料（包含雲端同步設定）
         const safeUser = {
             id:          user.id,
             username:    user.username,
@@ -163,6 +163,9 @@ router.post('/login', async (req, res) => {
             displayName: user.displayName,
             avatarUrl:   user.avatarUrl,
             role:        user.role,
+            language:    user.language,
+            favorites:   user.favorites || [],
+            themeSettings: user.themeSettings || {},
             createdAt:   user.createdAt,
         };
 
@@ -202,6 +205,9 @@ router.get('/me', verifyToken, async (req, res) => {
             displayName: user.displayName,
             avatarUrl:   user.avatarUrl,
             role:        user.role,
+            language:    user.language,
+            favorites:   user.favorites || [],
+            themeSettings: user.themeSettings || {},
             createdAt:   user.createdAt,
         };
 
@@ -209,6 +215,59 @@ router.get('/me', verifyToken, async (req, res) => {
 
     } catch (err) {
         console.error('[GET /api/auth/me] Error:', err);
+        return res.status(500).json({ success: false, message: '伺服器發生錯誤' });
+    }
+});
+
+// ─────────────────────────────────────────────────
+// PUT /api/auth/settings   （需要 JWT 保護）
+// Body: { favorites?: array, language?: string, themeSettings?: object }
+// ─────────────────────────────────────────────────
+router.put('/settings', verifyToken, async (req, res) => {
+    try {
+        const { favorites, language, themeSettings } = req.body;
+        
+        // req.user 由 verifyToken 中介層注入
+        const user = await User.findOne({ id: req.user.id });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: '用戶不存在' });
+        }
+
+        // 更新提供的欄位
+        if (favorites !== undefined) {
+            user.favorites = favorites;
+        }
+        if (language !== undefined) {
+            user.language = language;
+        }
+        if (themeSettings !== undefined) {
+            user.themeSettings = themeSettings;
+        }
+
+        await user.save();
+
+        const safeUser = {
+            id:          user.id,
+            username:    user.username,
+            email:       user.email,
+            displayName: user.displayName,
+            avatarUrl:   user.avatarUrl,
+            role:        user.role,
+            language:    user.language,
+            favorites:   user.favorites || [],
+            themeSettings: user.themeSettings || {},
+            createdAt:   user.createdAt,
+        };
+
+        return res.status(200).json({ 
+            success: true, 
+            message: '設定更新成功',
+            user: safeUser 
+        });
+
+    } catch (err) {
+        console.error('[PUT /api/auth/settings] Error:', err);
         return res.status(500).json({ success: false, message: '伺服器發生錯誤' });
     }
 });

@@ -214,9 +214,10 @@ function App() {
 
     try {
 
-      const response = await fetch(`${API_BASE}/user/settings`, {
+      // 使用新的 PUT /api/auth/settings 端點同步到雲端
+      const response = await fetch(`${API_BASE}/auth/settings`, {
 
-        method: 'PATCH',
+        method: 'PUT',
 
         headers: {
 
@@ -230,10 +231,9 @@ function App() {
 
       });
 
-      if (response.ok) {
-
-        console.log('語言設定已儲存到後端');
-
+      const data = await response.json();
+      if (data.success) {
+        console.log('語言設定已同步到雲端');
       }
 
     } catch (error) {
@@ -314,8 +314,36 @@ function App() {
 
   const toggleDarkMode = () => {
 
-    setIsDarkMode(!isDarkMode);
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
 
+    // 同步到雲端
+    if (user && token) {
+      syncThemeSettingsToCloud({ isDarkMode: newDarkMode });
+    }
+
+  };
+
+  const syncThemeSettingsToCloud = async (themeSettings) => {
+    if (!user || !token) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/auth/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ themeSettings }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        console.log('主題設定已同步到雲端');
+      }
+    } catch (error) {
+      console.error('同步主題設定失敗:', error);
+    }
   };
 
 
@@ -449,55 +477,40 @@ function App() {
 
     try {
 
-      const url = action === 'add' 
+      // 計算更新後的收藏列表
+      const updatedFavorites = action === 'add'
+        ? [...safeSavedImages, {
+            id: img.id,
+            author: img.author || '未知作者',
+            url: img.url || `https://picsum.photos/id/${img.id}/600/450`,
+            isCustom: img.isCustom || false,
+            savedAt: Date.now(),
+          }]
+        : safeSavedImages.filter(item => String(item.id) !== String(img.id));
 
-        ? `${API_BASE}/favorites`
-
-        : `${API_BASE}/favorites/${img.id}`;
-
-      
-
-      const method = action === 'add' ? 'POST' : 'DELETE';
-
-      
-
-      const response = await fetch(url, {
-
-        method,
-
+      // 使用新的 PUT /api/auth/settings 端點同步到雲端
+      const response = await fetch(`${API_BASE}/auth/settings`, {
+        method: 'PUT',
         headers: {
-
           'Content-Type': 'application/json',
-
           'Authorization': `Bearer ${token}`,
-
         },
-
-        body: action === 'add' 
-
-          ? JSON.stringify({ userId: user.id, image: img })
-
-          : JSON.stringify({ userId: user.id }),
-
+        body: JSON.stringify({
+          favorites: updatedFavorites,
+        }),
       });
 
-      
-
       const data = await response.json();
-
       if (data.success) {
-
-        setSavedImages(data.favorites);
-
+        // 後端已經更新，不需要再從後端拉取
+        console.log('收藏同步到雲端成功');
       }
 
     } catch (e) {
-
-      console.error('[Favorites] 同步失敗', e);
-
+      console.error('同步收藏到雲端失敗:', e);
     }
 
-  }, [user, token]);
+  }, [user, token, safeSavedImages, API_BASE]);
 
 
 
@@ -529,7 +542,7 @@ function App() {
 
         localStorage.setItem(AUTH_KEY, JSON.stringify({ token: data.token, user: data.user }));
 
-        // 呼叫 /api/auth/me 取得完整用戶資訊（包含 role）
+        // 呼叫 /api/auth/me 取得完整用戶資訊（包含 role、favorites、language、themeSettings）
         const meResponse = await fetch(`${API_BASE}/auth/me`, {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${data.token}` }
@@ -538,6 +551,17 @@ function App() {
         if (meData.success) {
           setUser(meData.user);
           localStorage.setItem(AUTH_KEY, JSON.stringify({ token: data.token, user: meData.user }));
+
+          // 初始化雲端同步的狀態
+          if (meData.user.favorites && Array.isArray(meData.user.favorites)) {
+            setSavedImages(meData.user.favorites);
+          }
+          if (meData.user.language) {
+            setLanguage(meData.user.language);
+          }
+          if (meData.user.themeSettings) {
+            // 如果有時間感知背景設定，可以在此處理
+          }
         }
 
         setShowAuthModal(false);
@@ -2001,122 +2025,129 @@ function App() {
       )}
 
       {/* 頁尾 */}
-      <footer style={{
-        padding: '40px 20px',
-        borderTop: `1px solid ${currentTheme.border}`,
-        backgroundColor: currentTheme.bg,
-        color: currentTheme.text,
-        fontSize: '0.9rem',
+<footer style={{
+  padding: '60px 20px 40px 20px',
+  borderTop: `1px solid ${currentTheme.border}`,
+  backgroundColor: currentTheme.bg,
+  color: currentTheme.text,
+  fontSize: '0.9rem',
+}}>
+  <div style={{
+    maxWidth: '1200px',
+    margin: '0 auto',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: '40px',
+  }}>
+    {/* 區塊一：關於 */}
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <h4 style={{
+        margin: '0 0 15px 0',
+        fontSize: '1.1rem',
+        fontWeight: '600',
+        color: isLight ? '#3b82f6' : '#fb7185',
+        letterSpacing: '1px'
       }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '30px',
+        關於畫師驛站
+      </h4>
+      <p style={{
+        margin: '0',
+        lineHeight: '1.7',
+        opacity: 0.8
+      }}>
+        專為藝術創作者打造的數位工具箱。提供隨機繪畫靈感、精選色彩搭配與速寫練習功能，陪伴妳的創作每一天。
+      </p>
+    </div>
+
+    {/* 區塊二：連結 */}
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <h4 style={{
+        margin: '0 0 15px 0',
+        fontSize: '1.1rem',
+        fontWeight: '600',
+        color: isLight ? '#3b82f6' : '#fb7185',
+        letterSpacing: '1px'
+      }}>
+        快捷連結
+      </h4>
+      <ul style={{
+        margin: '0',
+        padding: 0,
+        listStyle: 'none',
+      }}>
+        <li style={{ marginBottom: '12px' }}>
+          <a
+            href="https://bukutori.github.io/devfolio-1.0.0/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: currentTheme.text,
+              textDecoration: 'none',
+              opacity: 0.8,
+              transition: 'all 0.2s ease',
+            }}
+            onMouseOver={(e) => {
+              e.target.style.opacity = '1';
+              e.target.style.color = isLight ? '#3b82f6' : '#fb7185';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.opacity = '0.8';
+              e.target.style.color = currentTheme.text;
+            }}
+          >
+            我的個人網站
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    {/* 區塊三：驛站連線狀態 */}
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <h4 style={{
+        margin: '0 0 15px 0',
+        fontSize: '1.1rem',
+        fontWeight: '600',
+        color: isLight ? '#3b82f6' : '#fb7185',
+        letterSpacing: '1px'
+      }}>
+        驛站連線狀態
+      </h4>
+      <p style={{
+        margin: '0 0 15px 0',
+        lineHeight: '1.7',
+        opacity: 0.8
+      }}>
+        雲端資料庫（MongoDB）已同步連線。歡迎前往交流討論版留下一期一會的創作足跡！
+      </p>
+      <div>
+        <span style={{
+          display: 'inline-block',
+          fontSize: '0.8rem',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          backgroundColor: isLight ? '#e0f2fe' : '#311523',
+          color: isLight ? '#0369a1' : '#f43f5e',
+          fontWeight: '500'
         }}>
-          {/* 關於 */}
-          <div>
-            <h4 style={{
-              margin: '0 0 15px 0',
-              fontSize: '1.1rem',
-              fontWeight: '600',
-              color: isLight ? '#3b82f6' : '#fb7185'
-            }}>
-              關於
-            </h4>
-            <p style={{
-              margin: '0',
-              lineHeight: '1.6',
-              opacity: 0.8
-            }}>
-              藝術創作工具箱，提供繪畫靈感、色彩搭配、速寫練習等功能。
-            </p>
-          </div>
+          全球多伺服器同步中
+        </span>
+      </div>
+    </div>
+  </div>
 
-          {/* 連結 */}
-          <div>
-            <h4 style={{
-              margin: '0 0 15px 0',
-              fontSize: '1.1rem',
-              fontWeight: '600',
-              color: isLight ? '#3b82f6' : '#fb7185'
-            }}>
-              連結
-            </h4>
-            <ul style={{
-              margin: '0',
-              padding: 0,
-              listStyle: 'none',
-            }}>
-              <li style={{ marginBottom: '8px' }}>
-                <a
-                  href="https://bukutori.github.io/devfolio-1.0.0/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: currentTheme.text,
-                    textDecoration: 'none',
-                    transition: 'opacity 0.2s',
-                  }}
-                  onMouseOver={(e) => e.target.style.opacity = '0.7'}
-                  onMouseOut={(e) => e.target.style.opacity = '1'}
-                >
-                  我的個人網站
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* 版權 */}
-          <div>
-            <h4 style={{
-              margin: '0 0 15px 0',
-              fontSize: '1.1rem',
-              fontWeight: '600',
-              color: isLight ? '#3b82f6' : '#fb7185'
-            }}>
-              關於畫師驛站
-            </h4>
-            <p style={{
-              margin: '0',
-              lineHeight: '1.6',
-              opacity: 0.8
-            }}>
-              © 2024 藝術創作工具箱. All rights reserved.
-            </p>
-          </div>
-
-          <div className="footer-section">
-            <h4 style={{
-              margin: '0 0 15px 0',
-              fontSize: '1.1rem',
-              fontWeight: '600',
-              color: isLight ? '#3b82f6' : '#fb7185',
-              letterSpacing: '1px'
-            }}>
-              驛站連線狀態
-            </h4>
-            <p style={{
-              margin: '0 0 10px 0',
-              lineHeight: '1.7',
-              opacity: 0.8
-            }}>
-              🟢 雲端資料庫（MongoDB）已同步連線。歡迎前往交流討論版留下一期一會的創作足跡！
-            </p>
-            <span style={{
-              display: 'inline-block',
-              fontSize: '0.8rem',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              backgroundColor: isLight ? '#e0f2fe' : '#311523',
-              color: isLight ? '#0369a1' : '#f43f5e',
-              fontWeight: '500'
-            }}>
-            </span>
-          </div>
-        </div>
-      </footer>
+  {/* 底部版權列 - 確保視覺收尾與橫向置中對齊 */}
+  <div style={{
+    maxWidth: '1200px',
+    margin: '40px auto 0 auto',
+    paddingTop: '20px',
+    borderTop: `1px solid ${currentTheme.border}`,
+    opacity: 0.5,
+    fontSize: '0.8rem',
+    textAlign: 'center'
+  }}>
+    © 2024 - {new Date().getFullYear()} 藝術創作工具箱 All rights reserved.
+  </div>
+</footer>
 
     </div>
 

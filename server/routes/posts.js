@@ -83,6 +83,31 @@ router.get('/approved', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────
+// GET /api/posts/pending
+// 管理員專用，撈出所有 status: "pending" 的明信片
+// Header: Authorization: Bearer <token>
+// ─────────────────────────────────────────────────
+router.get('/pending', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const pendingPosts = await Post.find({ status: 'pending' })
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    res.json({
+      success: true,
+      posts: pendingPosts
+    });
+
+  } catch (err) {
+    console.error('[GET /api/posts/pending] Error:', err);
+    res.status(500).json({
+      success: false,
+      message: '伺服器發生錯誤'
+    });
+  }
+});
+
+// ─────────────────────────────────────────────────
 // PUT /api/posts/:id/approve
 // 管理員專用，將明信片狀態改為 approved
 // Header: Authorization: Bearer <token>

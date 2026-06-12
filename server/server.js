@@ -4,8 +4,7 @@
  */
 const path = require('path');
 // 確保優先讀取本地 .env，如果沒有（如 Render 環境），則直接使用系統注入的環境變數
-require('dotenv').config({ path: path.join(__dirname, '.env') });
-require('dotenv').config(); 
+require('dotenv').config({ path: path.join(__dirname, '.env') }); 
 
 const express = require('express');
 const cors = require('cors');

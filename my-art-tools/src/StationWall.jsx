@@ -42,7 +42,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
 
   const fetchPendingPosts = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/posts?status=pending`, {
+      const response = await fetch(`${API_BASE}/api/posts/pending`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -441,6 +441,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
               <img
                 src={post.imageUrl}
                 alt="明信片"
+                className={activeTab === 'pending' ? 'blur-md hover:blur-none transition duration-300' : ''}
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -448,20 +449,13 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover',
-                  transition: 'transform 0.3s ease',
-                  filter: activeTab === 'pending' ? 'blur(8px)' : 'none'
+                  transition: 'transform 0.3s ease'
                 }}
                 onMouseOver={(e) => {
                   e.target.style.transform = 'scale(1.05)';
-                  if (activeTab === 'pending') {
-                    e.target.style.filter = 'blur(0)';
-                  }
                 }}
                 onMouseOut={(e) => {
                   e.target.style.transform = 'scale(1)';
-                  if (activeTab === 'pending') {
-                    e.target.style.filter = 'blur(8px)';
-                  }
                 }}
               />
             </div>

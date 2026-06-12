@@ -463,8 +463,8 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
             {/* 內容區域 */}
             <div style={{
               padding: '20px',
-              backgroundColor: '#faf8f5',
-              borderTop: '3px solid #e8d5c4'
+              backgroundColor: post.status === 'pending' ? '#fff3cd' : '#faf8f5',
+              borderTop: post.status === 'pending' ? '3px solid #ffc107' : '3px solid #e8d5c4'
             }}>
               <div style={{
                 display: 'flex',
@@ -472,13 +472,27 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                 alignItems: 'center',
                 marginBottom: '12px'
               }}>
-                <span style={{
-                  color: '#8b7355',
-                  fontSize: '14px',
-                  fontWeight: 'bold'
-                }}>
-                  ✍️ {post.username}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    color: '#8b7355',
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}>
+                    ✍️ {post.username}
+                  </span>
+                  {post.status === 'pending' && (
+                    <span style={{
+                      backgroundColor: '#ffc107',
+                      color: '#333',
+                      fontSize: '11px',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontWeight: 'bold'
+                    }}>
+                      ⏳ 待審核
+                    </span>
+                  )}
+                </div>
                 <span style={{
                   color: '#a08060',
                   fontSize: '12px'

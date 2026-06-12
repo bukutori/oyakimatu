@@ -60,17 +60,46 @@ router.post('/', verifyToken, upload.single('image'), async (req, res) => {
 // ─────────────────────────────────────────────────
 // GET /api/posts/approved
 // 公開端點，撈出所有 status: "approved" 的明信片
+// 如果有 Token，額外撈取該用戶自己的 pending 明信片
 // 依時間由新到舊排序
 // ─────────────────────────────────────────────────
 router.get('/approved', async (req, res) => {
   try {
+    // 撈取所有已審核的明信片
     const approvedPosts = await Post.find({ status: 'approved' })
       .sort({ createdAt: -1 })
       .limit(100);
 
+    let posts = approvedPosts;
+
+    // 如果有 Token，額外撈取該用戶自己的待審核明信片
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7);
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.id;
+
+        // 撈取該用戶自己的待審核明信片
+        const userPendingPosts = await Post.find({ 
+          userId: userId, 
+          status: 'pending' 
+        }).sort({ createdAt: -1 });
+
+        // 將用戶的待審核明信片加入結果
+        posts = [...userPendingPosts, ...approvedPosts].sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+      } catch (err) {
+        // Token 無效，忽略錯誤，只返回已審核的明信片
+        console.log('[GET /api/posts/approved] Token verification failed, returning approved posts only');
+      }
+    }
+
     res.json({
       success: true,
-      posts: approvedPosts
+      posts
     });
 
   } catch (err) {

@@ -45,6 +45,7 @@ app.use(express.urlencoded({ extended: true }));
 // ── Routes ─────────────────────────────────────────
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/images', require('./routes/images'));
+app.use('/api/posts', require('./routes/posts'));
 
 // ── Favorites API (MongoDB) ─────────────────────
 const Favorite = require('./models/Favorite');

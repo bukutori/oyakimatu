@@ -44,6 +44,8 @@ const TRANSLATIONS = {
 
     palette: '主題色票',
 
+    station: '驛站留言牆',
+
     admin: '管理員',
 
     mySite: '我的網站',
@@ -237,6 +239,8 @@ const TRANSLATIONS = {
     inspiration: 'インスピレーション抽選',
 
     palette: 'テーマパレット',
+
+    station: '駅留言壁',
 
     admin: '管理者',
 

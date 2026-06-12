@@ -10,6 +10,8 @@ import ImageBrowser from './ImageBrowser';
 
 import AdminPanel from './AdminPanel';
 
+import StationWall from './StationWall';
+
 import logoImg from './img/144.png';
 
 import TRANSLATIONS from './translations';
@@ -52,6 +54,7 @@ const NAV_TABS = [
 
   { id: 'palette', labelKey: 'palette' },
 
+  { id: 'station', labelKey: 'station' },
 
 ];
 
@@ -244,58 +247,6 @@ function App() {
 
   };
 
-  // 從後端撈取語言設定
-
-  const fetchLanguagePreference = async () => {
-
-    if (!user || !token) return;
-
-    try {
-
-      const response = await fetch(`${API_BASE}/user/settings`, {
-
-        method: 'GET',
-
-        headers: {
-
-          'Authorization': `Bearer ${token}`,
-
-        },
-
-      });
-
-      if (response.ok) {
-
-        const data = await response.json();
-
-        if (data.language) {
-
-          setLanguage(data.language);
-
-        }
-
-      }
-
-    } catch (error) {
-
-      console.error('撈取語言設定失敗:', error);
-
-    }
-
-  };
-
-  // 登入成功後撈取語言設定
-
-  useEffect(() => {
-
-    if (user && token) {
-
-      fetchLanguagePreference();
-
-    }
-
-  }, [user, token]);
-
   // 語言切換處理
 
   const handleLanguageChange = (newLanguage) => {
@@ -361,6 +312,8 @@ function App() {
 
           const { token: savedToken, user: savedUser } = JSON.parse(raw);
 
+          console.log('[Auth] 發現 localStorage Token，開始載入雲端資料...');
+
           setToken(savedToken);
 
           setUser(savedUser);
@@ -370,26 +323,47 @@ function App() {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${savedToken}` }
           });
+          
+          if (!meResponse.ok) {
+            console.error('[Auth] /api/auth/me 請求失敗:', meResponse.status);
+            return;
+          }
+
           const meData = await meResponse.json();
+          
           if (meData.success) {
+            console.log('[Auth] 雲端資料載入成功:', meData.user);
+            
             setUser(meData.user);
             localStorage.setItem(AUTH_KEY, JSON.stringify({ token: savedToken, user: meData.user }));
 
             // 初始化雲端同步的狀態
             if (meData.user.favorites && Array.isArray(meData.user.favorites)) {
+              console.log('[Auth] 載入收藏照片:', meData.user.favorites.length, '張');
+              console.log('[Auth] 收藏照片資料結構:', JSON.stringify(meData.user.favorites[0], null, 2));
               setSavedImages(meData.user.favorites);
+            } else {
+              console.log('[Auth] 雲端無收藏資料，使用空陣列');
+              setSavedImages([]);
             }
+            
             if (meData.user.language) {
+              console.log('[Auth] 載入語言設定:', meData.user.language);
               setLanguage(meData.user.language);
             }
+            
             if (meData.user.themeSettings) {
-              // 如果有時間感知背景設定，可以在此處理
+              console.log('[Auth] 載入主題設定:', meData.user.themeSettings);
               if (meData.user.themeSettings.isDarkMode !== undefined) {
                 setIsDarkMode(meData.user.themeSettings.isDarkMode);
               }
             }
+          } else {
+            console.error('[Auth] 雲端資料載入失敗:', meData.message);
           }
 
+        } else {
+          console.log('[Auth] localStorage 無 Token，跳過雲端載入');
         }
 
       } catch (e) {
@@ -405,23 +379,9 @@ function App() {
 
 
 
-  // ── 2. 全域收藏狀態（由 localStorage 初始化）───────────
+  // ── 2. 全域收藏狀態（預設為空陣列，由雲端或 localStorage 初始化）───────────
 
-  const [savedImages, setSavedImages] = useState(() => {
-
-    try {
-
-      const raw = localStorage.getItem(LS_KEY);
-
-      return raw ? JSON.parse(raw) : [];
-
-    } catch {
-
-      return [];
-
-    }
-
-  });
+  const [savedImages, setSavedImages] = useState([]);
 
   // 確保 savedImages 總是陣列
   const safeSavedImages = Array.isArray(savedImages) ? savedImages : [];
@@ -447,56 +407,6 @@ function App() {
     }
 
   }, [savedImages, user]);
-
-
-
-  // 登入後從後端載入收藏
-
-  useEffect(() => {
-
-    if (user && token) {
-
-      fetchFavorites();
-
-    }
-
-  }, [user, token]);
-
-
-
-  // ── 3. 後端 API 函式 ───────────────────────────────
-
-  const fetchFavorites = useCallback(async () => {
-
-    if (!user || !token) return;
-
-    try {
-
-      const response = await fetch(`${API_BASE}/favorites?userId=${user.id}`, {
-
-        headers: {
-
-          'Authorization': `Bearer ${token}`,
-
-        },
-
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-
-        setSavedImages(data.favorites);
-
-      }
-
-    } catch (e) {
-
-      console.error('[Favorites] 載入失敗', e);
-
-    }
-
-  }, [user, token]);
 
 
 
@@ -565,31 +475,21 @@ function App() {
 
       if (data.success) {
 
+        // 立即更新狀態（使用登入回傳的資料，不需要額外呼叫 /me）
         setToken(data.token);
-
         setUser(data.user);
-
         localStorage.setItem(AUTH_KEY, JSON.stringify({ token: data.token, user: data.user }));
 
-        // 呼叫 /api/auth/me 取得完整用戶資訊（包含 role、favorites、language、themeSettings）
-        const meResponse = await fetch(`${API_BASE}/auth/me`, {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${data.token}` }
-        });
-        const meData = await meResponse.json();
-        if (meData.success) {
-          setUser(meData.user);
-          localStorage.setItem(AUTH_KEY, JSON.stringify({ token: data.token, user: meData.user }));
-
-          // 初始化雲端同步的狀態
-          if (meData.user.favorites && Array.isArray(meData.user.favorites)) {
-            setSavedImages(meData.user.favorites);
-          }
-          if (meData.user.language) {
-            setLanguage(meData.user.language);
-          }
-          if (meData.user.themeSettings) {
-            // 如果有時間感知背景設定，可以在此處理
+        // 立即初始化雲端同步的狀態
+        if (data.user.favorites && Array.isArray(data.user.favorites)) {
+          setSavedImages(data.user.favorites);
+        }
+        if (data.user.language) {
+          setLanguage(data.user.language);
+        }
+        if (data.user.themeSettings) {
+          if (data.user.themeSettings.isDarkMode !== undefined) {
+            setIsDarkMode(data.user.themeSettings.isDarkMode);
           }
         }
 
@@ -927,6 +827,14 @@ function App() {
       case 'palette':
 
         return <ColorPalette theme={isDarkMode ? 'dark' : 'light'} language={language} />;
+
+
+
+      // ── 驛站留言牆 ──────────────────────────────────────
+
+      case 'station':
+
+        return <StationWall token={token} user={user} theme={isDarkMode ? 'dark' : 'light'} language={language} />;
 
 
 

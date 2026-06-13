@@ -1093,16 +1093,15 @@ function App() {
           </nav>
 
 
-
-          {/* 右側控制區（時鐘、背景切換、設定） */}
-
-          <div style={{
+ <div style={{
 
             display: 'flex',
 
             alignItems: 'center',
 
             gap: '6px',
+            marginLeft: 'auto',  // 👈 加上這一行，整塊就會帥氣地往最右邊靠齊！
+         paddingRight: '8px'
 
           }}>
 
@@ -1294,6 +1293,9 @@ function App() {
 
           </div>
 
+          {/* 右側控制區（時鐘、背景切換、設定） */}
+
+         
 
 
           {/* 登入/註冊按鈕 */}

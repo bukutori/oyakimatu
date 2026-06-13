@@ -38,6 +38,12 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
   const [approvingId, setApprovingId]       = useState(null);         // 防止重複點擊
   const [rejectingId, setRejectingId]       = useState(null);
 
+  // 新增狀態：留言與燈箱
+  const [lightboxPost, setLightboxPost]     = useState(null);
+  const [commentInputs, setCommentInputs]   = useState({});
+  const [expandedComments, setExpandedComments] = useState({});
+  const [submittingCommentId, setSubmittingCommentId] = useState(null);
+
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   // ── 顯示訊息工具函式 ─────────────────────────────────────────────────────────
@@ -218,9 +224,13 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
     }
   };
 
-  // ── 4. 管理員婉拒：DELETE /:id ───────────────────────────────────────────────
+  // ── 4. 管理員婉拒 / 刪除：DELETE /:id ───────────────────────────────────────────────
   //    成功後即時從 pendingPosts state filter 掉
-  const handleDelete = async (postId) => {
+  const handleDelete = async (postId, requireConfirm = false) => {
+    if (requireConfirm) {
+      if (!window.confirm("確定要永久刪除這張明信片嗎？")) return;
+    }
+
     if (rejectingId) return; // 防止重複點擊
     setRejectingId(postId);
 
@@ -236,7 +246,11 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
         setPendingPosts(prev => prev.filter(p => p._id !== postId));
         // 也從公開牆移除（以防萬一）
         setPosts(prev => prev.filter(p => p._id !== postId));
-        showMessage('🗑️ 明信片已婉拒刪除', 'info');
+        
+        // 如果燈箱剛好開著被刪除的那張，同步關閉
+        setLightboxPost(prev => (prev && prev._id === postId) ? null : prev);
+        
+        showMessage('🗑️ 明信片已刪除', 'info');
       } else {
         showMessage(data.message || '刪除失敗', 'error');
       }
@@ -245,6 +259,54 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
       showMessage('刪除失敗，請稍後再試', 'error');
     } finally {
       setRejectingId(null);
+    }
+  };
+
+  // ── 5. 留言功能：提交留言 ────────────────────────────────────────────────────
+  const handleCommentSubmit = async (e, postId) => {
+    e.preventDefault();
+    if (!token) {
+      showMessage('請先登入才能留言', 'error');
+      return;
+    }
+    const text = commentInputs[postId]?.trim();
+    if (!text) return;
+
+    setSubmittingCommentId(postId);
+    try {
+      const response = await fetch(`${API_BASE}/api/posts/${postId}/comment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ text })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        // 即時更新 posts 陣列中該張明信片的內容
+        setPosts(prev => prev.map(p => p._id === postId ? data.post : p));
+        // 如果是在待審核牆，也一併更新
+        setPendingPosts(prev => prev.map(p => p._id === postId ? data.post : p));
+        
+        // 清空輸入框
+        setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+        // 展開留言區以顯示最新留言
+        setExpandedComments(prev => ({ ...prev, [postId]: true }));
+        
+        // 如果燈箱剛好開著，也同步更新燈箱內的資料
+        setLightboxPost(prev => (prev && prev._id === postId) ? data.post : prev);
+        
+        showMessage('留言成功！', 'success', 2000);
+      } else {
+        showMessage(data.message || '留言失敗', 'error');
+      }
+    } catch (error) {
+      console.error('[handleCommentSubmit] Error:', error);
+      showMessage('網路錯誤，請稍後再試', 'error');
+    } finally {
+      setSubmittingCommentId(null);
     }
   };
 
@@ -744,9 +806,40 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                   overflow: 'hidden',
                   backgroundColor: theme === 'dark' ? '#111' : '#f0f0f0'
                 }}>
+                  {/* 管理員專用：刪除貼文按鈕（左上角） */}
+                  {user && user.role === 'admin' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDelete(post._id, true); }}
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '10px',
+                        backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                        transition: 'all 0.2s',
+                        zIndex: 10
+                      }}
+                      title="刪除這張明信片"
+                      onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                      onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                      🗑️
+                    </button>
+                  )}
+
                   <img
                     src={post.imageUrl}
                     alt="明信片"
+                    onClick={() => setLightboxPost(post)}
                     /* ── 管理員待審核 Tab 的毛玻璃特效（Tailwind class）── */
                     className={isAdminPendingTab ? 'blur-md hover:blur-none transition duration-300' : ''}
                     style={{
@@ -754,7 +847,8 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                       top: 0, left: 0,
                       width: '100%', height: '100%',
                       objectFit: 'cover',
-                      transition: 'transform 0.4s ease'
+                      transition: 'transform 0.4s ease',
+                      cursor: 'pointer'
                     }}
                     onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.06)'; }}
                     onMouseOut={(e)  => { e.currentTarget.style.transform = 'scale(1)'; }}
@@ -863,6 +957,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
 
                   {/* 查看留言按鈕 */}
                   <button
+                    onClick={() => setExpandedComments(prev => ({ ...prev, [post._id]: !prev[post._id] }))}
                     style={{
                       width: '100%',
                       padding: '10px',
@@ -882,8 +977,81 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                       e.currentTarget.style.backgroundColor = theme === 'dark' ? '#2a2a2a' : '#e8d5c4';
                     }}
                   >
-                    💬 查看留言 ({post.comments?.length || 0})
+                    💬 {expandedComments[post._id] ? '隱藏留言' : `查看留言 (${post.comments?.length || 0})`}
                   </button>
+
+                  {/* 留言區塊（展開時顯示） */}
+                  {expandedComments[post._id] && (
+                    <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: `1px solid ${currentTheme.border}`, animation: 'fadeIn 0.3s ease' }}>
+                      {/* 留言列表 */}
+                      {post.comments && post.comments.length > 0 ? (
+                        <div style={{ maxHeight: '180px', overflowY: 'auto', marginBottom: '12px', paddingRight: '4px' }}>
+                          {post.comments.map((comment, idx) => (
+                            <div key={idx} style={{ marginBottom: '12px', fontSize: '13px', color: currentTheme.text }}>
+                              <div style={{ marginBottom: '4px' }}>
+                                <span style={{ fontWeight: '700', color: theme === 'dark' ? '#d4a96a' : '#8b7355', marginRight: '8px' }}>
+                                  {comment.username}
+                                </span>
+                                <span style={{ fontSize: '11px', color: currentTheme.textSecondary }}>
+                                  {new Date(comment.createdAt).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <div style={{ wordBreak: 'break-word', lineHeight: '1.5', color: theme === 'dark' ? '#e0e0e0' : '#444' }}>
+                                {comment.text}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: '13px', color: currentTheme.textSecondary, textAlign: 'center', marginBottom: '12px' }}>
+                          還沒有留言，來當第一個留言的人吧！
+                        </p>
+                      )}
+
+                      {/* 留言輸入框 */}
+                      <form onSubmit={(e) => handleCommentSubmit(e, post._id)} style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                          type="text"
+                          value={commentInputs[post._id] || ''}
+                          onChange={(e) => setCommentInputs(prev => ({ ...prev, [post._id]: e.target.value }))}
+                          placeholder={token ? "寫下你的留言..." : "請先登入才能留言"}
+                          disabled={!token || submittingCommentId === post._id}
+                          style={{
+                            flex: 1,
+                            padding: '10px 14px',
+                            borderRadius: '20px',
+                            border: `1px solid ${currentTheme.border}`,
+                            backgroundColor: theme === 'dark' ? '#111' : '#f9f9f9',
+                            color: currentTheme.text,
+                            fontSize: '13px',
+                            outline: 'none',
+                            transition: 'border-color 0.2s',
+                            cursor: token ? 'text' : 'not-allowed'
+                          }}
+                          onFocus={(e) => e.target.style.borderColor = currentTheme.accent}
+                          onBlur={(e) => e.target.style.borderColor = currentTheme.border}
+                        />
+                        <button
+                          type="submit"
+                          disabled={!token || submittingCommentId === post._id || !commentInputs[post._id]?.trim()}
+                          style={{
+                            padding: '8px 18px',
+                            backgroundColor: currentTheme.accent,
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '20px',
+                            fontSize: '13px',
+                            fontWeight: 'bold',
+                            cursor: (!token || submittingCommentId === post._id || !commentInputs[post._id]?.trim()) ? 'not-allowed' : 'pointer',
+                            opacity: (!token || submittingCommentId === post._id || !commentInputs[post._id]?.trim()) ? 0.5 : 1,
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          送出
+                        </button>
+                      </form>
+                    </div>
+                  )}
 
                   {/* ── 管理員審核按鈕（待審核 Tab 才顯示）────────────── */}
                   {isAdminPendingTab && (
@@ -988,6 +1156,234 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
         </div>
       )}
 
+      {/* ── FB 風格圖片雙欄放大燈箱 (FB Lightbox) ────────────────────────────────────────── */}
+      {lightboxPost && (
+        <div
+          onClick={() => setLightboxPost(null)}
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, width: '100vw', height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            animation: 'fadeIn 0.25s ease',
+            padding: '20px', // 給視窗邊緣留點空隙
+            boxSizing: 'border-box'
+          }}
+        >
+          {/* 關閉按鈕 */}
+          <button
+            onClick={() => setLightboxPost(null)}
+            style={{
+              position: 'absolute',
+              top: '24px', right: '24px',
+              background: 'rgba(255,255,255,0.1)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '50%',
+              width: '44px', height: '44px',
+              fontSize: '28px',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s ease',
+              backdropFilter: 'blur(4px)',
+              zIndex: 10000
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+            onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            &times;
+          </button>
+          
+          <div
+            onClick={(e) => e.stopPropagation()} // 避免點擊彈窗內部關閉
+            style={{
+              display: 'flex',
+              flexDirection: window.innerWidth < 768 ? 'column' : 'row', // 手機版垂直排列
+              width: '100%',
+              maxWidth: '1200px',
+              height: window.innerWidth < 768 ? 'auto' : '90vh',
+              maxHeight: '90vh',
+              backgroundColor: currentTheme.cardBg,
+              borderRadius: '16px',
+              overflow: 'hidden',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+              animation: 'zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+            }}
+          >
+            {/* 左側：圖片區 (佔滿剩餘空間) */}
+            <div style={{
+              flex: 1,
+              backgroundColor: '#000',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              minHeight: window.innerWidth < 768 ? '40vh' : 'auto'
+            }}>
+              <img
+                src={lightboxPost.imageUrl}
+                alt="放大預覽"
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain'
+                }}
+              />
+            </div>
+
+            {/* 右側：資訊與留言區 (固定寬度) */}
+            <div style={{
+              width: window.innerWidth < 768 ? '100%' : '380px',
+              minWidth: window.innerWidth < 768 ? 'auto' : '380px',
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: currentTheme.cardBg,
+              borderLeft: window.innerWidth < 768 ? 'none' : `1px solid ${currentTheme.border}`,
+              position: 'relative',
+              height: window.innerWidth < 768 ? '50vh' : 'auto'
+            }}>
+              {/* 右側頂部：作者與內文 */}
+              <div style={{ padding: '20px', borderBottom: `1px solid ${currentTheme.border}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: theme === 'dark' ? '#d4a96a' : '#8b7355', fontSize: '15px', fontWeight: '800' }}>
+                      ✍️ {lightboxPost.username}
+                    </span>
+                    {user && user.role === 'admin' && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(lightboxPost._id, true); }}
+                        style={{
+                          backgroundColor: '#ef4444',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '2px 8px',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseOver={e => e.currentTarget.style.backgroundColor = '#dc2626'}
+                        onMouseOut={e => e.currentTarget.style.backgroundColor = '#ef4444'}
+                      >
+                        🗑️ 刪除
+                      </button>
+                    )}
+                  </div>
+                  <span style={{ color: currentTheme.textSecondary, fontSize: '12px' }}>
+                    {new Date(lightboxPost.createdAt).toLocaleDateString('zh-TW', {
+                      year: 'numeric', month: '2-digit', day: '2-digit'
+                    })}
+                  </span>
+                </div>
+                <p style={{
+                  color: theme === 'dark' ? '#c8b89a' : '#5c4a3a',
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  margin: 0,
+                  wordBreak: 'break-word',
+                  maxHeight: '120px',
+                  overflowY: 'auto'
+                }}>
+                  {lightboxPost.content}
+                </p>
+              </div>
+
+              {/* 右側中間：留言列表 (可滾動) */}
+              <div style={{
+                flex: 1,
+                padding: '20px',
+                overflowY: 'auto',
+                backgroundColor: theme === 'dark' ? '#111' : '#fafafa'
+              }}>
+                {lightboxPost.comments && lightboxPost.comments.length > 0 ? (
+                  lightboxPost.comments.map((comment, idx) => (
+                    <div key={idx} style={{ marginBottom: '16px', fontSize: '13px', color: currentTheme.text }}>
+                      <div style={{ marginBottom: '4px' }}>
+                        <span style={{ fontWeight: '700', color: theme === 'dark' ? '#d4a96a' : '#8b7355', marginRight: '8px' }}>
+                          {comment.username}
+                        </span>
+                        <span style={{ fontSize: '11px', color: currentTheme.textSecondary }}>
+                          {new Date(comment.createdAt).toLocaleString('zh-TW', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div style={{ wordBreak: 'break-word', lineHeight: '1.5', color: theme === 'dark' ? '#e0e0e0' : '#444' }}>
+                        {comment.text}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: currentTheme.textSecondary, opacity: 0.7
+                  }}>
+                    <span style={{ fontSize: '40px', marginBottom: '8px' }}>💬</span>
+                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>成為第一個留言的人吧！</p>
+                  </div>
+                )}
+              </div>
+
+              {/* 右側底部：留言輸入框 */}
+              <div style={{
+                padding: '16px',
+                borderTop: `1px solid ${currentTheme.border}`,
+                backgroundColor: currentTheme.cardBg
+              }}>
+                <form onSubmit={(e) => handleCommentSubmit(e, lightboxPost._id)} style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    value={commentInputs[lightboxPost._id] || ''}
+                    onChange={(e) => setCommentInputs(prev => ({ ...prev, [lightboxPost._id]: e.target.value }))}
+                    placeholder={token ? "寫下你的留言..." : "請先登入才能留言"}
+                    disabled={!token || submittingCommentId === lightboxPost._id || lightboxPost.status !== 'approved'}
+                    style={{
+                      flex: 1,
+                      padding: '10px 14px',
+                      borderRadius: '20px',
+                      border: `1px solid ${currentTheme.border}`,
+                      backgroundColor: theme === 'dark' ? '#111' : '#f9f9f9',
+                      color: currentTheme.text,
+                      fontSize: '13px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      cursor: (token && lightboxPost.status === 'approved') ? 'text' : 'not-allowed'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = currentTheme.accent}
+                    onBlur={(e) => e.target.style.borderColor = currentTheme.border}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!token || submittingCommentId === lightboxPost._id || !commentInputs[lightboxPost._id]?.trim() || lightboxPost.status !== 'approved'}
+                    style={{
+                      padding: '8px 18px',
+                      backgroundColor: currentTheme.accent,
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '20px',
+                      fontSize: '13px',
+                      fontWeight: 'bold',
+                      cursor: (!token || submittingCommentId === lightboxPost._id || !commentInputs[lightboxPost._id]?.trim() || lightboxPost.status !== 'approved') ? 'not-allowed' : 'pointer',
+                      opacity: (!token || submittingCommentId === lightboxPost._id || !commentInputs[lightboxPost._id]?.trim() || lightboxPost.status !== 'approved') ? 0.5 : 1,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    送出
+                  </button>
+                </form>
+                {lightboxPost.status !== 'approved' && (
+                  <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '11px', color: '#f59e0b', fontWeight: 'bold' }}>
+                    ⏳ 待審核的明信片無法留言
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── CSS 動畫（keyframes 放在 style 標籤，避免依賴外部 CSS） ──────────── */}
       <style>{`
         @keyframes slideIn {
@@ -997,6 +1393,14 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
         @keyframes spin {
           from { transform: rotate(0deg); }
           to   { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes zoomIn {
+          from { opacity: 0; transform: scale(0.85); }
+          to   { opacity: 1; transform: scale(1); }
         }
       `}</style>
     </div>

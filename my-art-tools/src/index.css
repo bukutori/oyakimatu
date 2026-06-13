@@ -55,8 +55,10 @@ body {
 }
 
 #root {
-  width: 100% !important;       /* 👈 從 100vw 改成 100% */
-  max-width: 100% !important;   /* 👈 從 100vw 改成 100% */
+  width: 100% !important;
+  /* 👈 從 100vw 改成 100% */
+  max-width: 100% !important;
+  /* 👈 從 100vw 改成 100% */
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
@@ -72,8 +74,10 @@ body {
 body {
   margin: 0 !important;
   padding: 0 !important;
-  width: 100% !important;       /* 👈 從 100vw 改成 100% */
-  overflow-x: hidden !important; /* 👈 強制把最底部的左右捲軸變不見 */
+  width: 100% !important;
+  /* 👈 從 100vw 改成 100% */
+  overflow-x: hidden !important;
+  /* 👈 強制把最底部的左右捲軸變不見 */
 }
 
 h1,
@@ -198,3 +202,5 @@ code {
     flex-direction: column;
   }
 }
+
+/* Custom utility classes */

@@ -1,134 +1,242 @@
+/* ─────────────────────────────────────────────────────────
+   全局設計系統 — 繪師驛站
+   Google Fonts · 毛玻璃 · 微動畫 · 響應式 RWD
+───────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ── CSS Custom Properties ─────────────────────────────── */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Light theme tokens */
+  --bg-light:        linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e8edf5 100%);
+  --surface-light:   rgba(255, 255, 255, 0.80);
+  --surface-elevated: rgba(255, 255, 255, 0.95);
+  --border-light:    rgba(148, 163, 184, 0.25);
+  --text-primary-light: #0f172a;
+  --text-secondary-light: #64748b;
+  --accent-light:    #3b82f6;
+  --accent-rose:     #f43f5e;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  /* Dark theme tokens */
+  --bg-dark:         linear-gradient(135deg, #0a0a0f 0%, #0f1117 50%, #111827 100%);
+  --surface-dark:    rgba(15, 15, 20, 0.80);
+  --border-dark:     rgba(255, 255, 255, 0.07);
+  --text-primary-dark: #f1f5f9;
+  --text-secondary-dark: #94a3b8;
+
+  /* Shared */
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  18px;
+  --radius-xl:  24px;
+  --radius-full: 9999px;
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg:  0 16px 48px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12);
+  --shadow-glow-blue: 0 0 24px rgba(59,130,246,0.25);
+  --shadow-glow-rose: 0 0 24px rgba(244,63,94,0.25);
+
+  --transition-fast:   all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow:   all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Typography */
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: light dark;
 
   @media (max-width: 1024px) {
-    font-size: 16px;
+    font-size: 15px;
+  }
+
+  @media (max-width: 640px) {
+    font-size: 14px;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* ── Reset & Base ──────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  margin: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  overflow-x: hidden !important;
+  background: var(--bg-light);
 }
 
 #root {
   width: 100% !important;
-  /* 👈 從 100vw 改成 100% */
   max-width: 100% !important;
-  /* 👈 從 100vw 改成 100% */
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
   border-inline: none !important;
   box-shadow: none !important;
-  text-align: center;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
 
-body {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100% !important;
-  /* 👈 從 100vw 改成 100% */
-  overflow-x: hidden !important;
-  /* 👈 強制把最底部的左右捲軸變不見 */
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-
-p {
+/* ── Typography Scale ─────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--sans);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+h1 { font-size: clamp(1.75rem, 4vw, 2.75rem); }
+h2 { font-size: clamp(1.35rem, 3vw, 1.9rem); }
+h3 { font-size: clamp(1.1rem, 2.5vw, 1.4rem); }
+h4 { font-size: clamp(0.95rem, 2vw, 1.1rem); }
+
+p { margin: 0; }
+
+/* ── Glassmorphism Utilities ──────────────────────────── */
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(1.8);
+  -webkit-backdrop-filter: blur(16px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: var(--shadow-md);
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.glass-dark {
+  background: rgba(15, 15, 25, 0.72);
+  backdrop-filter: blur(16px) saturate(1.8);
+  -webkit-backdrop-filter: blur(16px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-md);
 }
 
-/* 儀表板三欄式與響應式排版 */
+/* ── Gradient Text ─────────────────────────────────────── */
+.gradient-text-blue {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-rose {
+  background: linear-gradient(135deg, #fb7185, #f43f5e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Micro Animation Keyframes ──────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  50%       { box-shadow: 0 0 16px 4px rgba(59, 130, 246, 0.25); }
+}
+
+.animate-fadeInUp    { animation: fadeInUp    0.35s ease both; }
+.animate-fadeIn      { animation: fadeIn      0.25s ease both; }
+.animate-slideInDown { animation: slideInDown 0.3s ease both; }
+.animate-scaleIn     { animation: scaleIn     0.25s ease both; }
+
+/* ── Navbar Mobile Menu Animations ───────────────────── */
+@keyframes menuSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scaleY(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+.mobile-menu-enter {
+  animation: menuSlideDown 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+  transform-origin: top center;
+}
+
+/* ── Scrollbar Styling ─────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
+}
+
+/* ── Form Input Focus Ring ─────────────────────────────── */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+}
+
+/* ── Button Base Reset ─────────────────────────────────── */
+button {
+  font-family: var(--sans);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  user-select: none;
+}
+
+/* ── Dashboard Grid (legacy support) ─────────────────── */
 .dashboard-grid {
   display: grid;
   grid-template-columns: 380px 1fr 380px;
@@ -140,14 +248,8 @@ code {
   box-sizing: border-box;
 }
 
-.db-left {
-  order: 1;
-}
-
-.db-center {
-  order: 2;
-}
-
+.db-left  { order: 1; }
+.db-center { order: 2; }
 .db-right {
   order: 3;
   display: flex;
@@ -159,48 +261,26 @@ code {
   .dashboard-grid {
     grid-template-columns: 1fr 1.3fr;
   }
-
-  .db-center {
-    grid-column: span 2;
-    order: 1;
-  }
-
-  .db-left {
-    grid-column: 1;
-    order: 2;
-  }
-
-  .db-right {
-    grid-column: 2;
-    order: 3;
-    flex-direction: row;
-  }
-
-  .db-right>* {
-    flex: 1;
-  }
+  .db-center { grid-column: span 2; order: 1; }
+  .db-left   { grid-column: 1; order: 2; }
+  .db-right  { grid-column: 2; order: 3; flex-direction: row; }
+  .db-right > * { flex: 1; }
 }
 
 @media (max-width: 768px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
-
-  .db-center {
-    grid-column: span 1;
-    order: 1;
-  }
-
-  .db-left {
-    grid-column: 1;
-    order: 2;
-  }
-
-  .db-right {
-    grid-column: 1;
-    order: 3;
-    flex-direction: column;
-  }
+  .db-center { grid-column: span 1; order: 1; }
+  .db-left   { grid-column: 1; order: 2; }
+  .db-right  { grid-column: 1; order: 3; flex-direction: column; }
 }
 
-/* Custom utility classes */
+/* ── Responsive Helper ─────────────────────────────────── */
+.hide-mobile  { display: initial; }
+.show-mobile  { display: none !important; }
+
+@media (max-width: 767px) {
+  .hide-mobile { display: none !important; }
+  .show-mobile { display: flex !important; }
+}

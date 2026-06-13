@@ -9,11 +9,11 @@ const mongoose = require('mongoose');
 const postSchema = new mongoose.Schema({
   imageUrl: {
     type: String,
-    required: true
+    required: false
   },
   content: {
     type: String,
-    required: true,
+    required: false,
     maxlength: 500
   },
   username: {

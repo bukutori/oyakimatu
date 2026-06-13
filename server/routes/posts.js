@@ -54,39 +54,39 @@ const upload = multer({
 router.post('/', verifyToken, upload.single('image'), async (req, res) => {
   try {
     const { content } = req.body;
-
-    // 1. 確認 Cloudinary 上傳成功（req.file 由 multer-storage-cloudinary 填入）
     const imageUrl = req.file?.path; // Cloudinary 回傳的完整 HTTPS 圖片網址
-    if (!imageUrl) {
+
+    const hasImage = !!imageUrl;
+    const hasContent = !!(content && content.trim() !== '');
+
+    if (!hasImage && !hasContent) {
       return res.status(400).json({
         success: false,
-        message: '圖片上傳失敗，請確認 Cloudinary 設定或重試'
+        message: '請上傳圖片或填寫故事文字'
       });
     }
 
-    if (!content || content.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        message: '請填寫故事文字'
-      });
-    }
+    // 判斷是否為管理員，決定審核狀態與提示訊息
+    const isAdmin = req.user.role === 'admin';
+    const status = isAdmin ? 'approved' : 'pending';
+    const message = isAdmin ? '明信片已成功發布！' : '明信片已送出，等待管理員審核！';
 
-    // 2. 存入 MongoDB（status 預設 'pending'，等待管理員審核）
+    // 2. 存入 MongoDB
     const newPost = new Post({
-      imageUrl,                     // Cloudinary 圖片 URL
-      content:  content.trim(),
+      imageUrl: hasImage ? imageUrl : undefined,
+      content:  hasContent ? content.trim() : undefined,
       username: req.user.username,  // 來自 JWT payload
       userId:   req.user.id,        // 來自 JWT payload（與 User.id 對應）
-      status:   'pending'           // 明確設定，雖然 schema 有 default 但明確更安全
+      status:   status
     });
 
     await newPost.save();
 
-    console.log(`[POST /api/posts] 新明信片已建立: ${newPost._id} by ${req.user.username}`);
+    console.log(`[POST /api/posts] 新明信片已建立: ${newPost._id} by ${req.user.username} (status: ${status})`);
 
     return res.status(201).json({
       success: true,
-      message: '明信片發布成功，等待管理員審核',
+      message,
       post:    newPost
     });
 

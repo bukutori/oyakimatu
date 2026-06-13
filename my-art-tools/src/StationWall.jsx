@@ -22,8 +22,11 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import TRANSLATIONS from './translations';
 
 const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
+  // 多國語言翻譯
+  const t = (key) => TRANSLATIONS[language][key] || key;
   // ── State ────────────────────────────────────────────────────────────────────
   const [posts, setPosts]                   = useState([]);           // approved + 自己的 pending（普通用戶）
   const [pendingPosts, setPendingPosts]     = useState([]);           // 全部 pending（管理員專用）
@@ -120,7 +123,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
     if (file) {
       // 檔案大小限制 10MB
       if (file.size > 10 * 1024 * 1024) {
-        showMessage('圖片檔案大小不能超過 10MB', 'error');
+        showMessage(t('alertSizeLimit'), 'error');
         return;
       }
       setFormData(prev => ({ ...prev, image: file }));
@@ -134,15 +137,15 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
     e.preventDefault();
 
     if (!token) {
-      showMessage('請先登入才能發布明信片', 'error');
+      showMessage(t('alertLoginRequiredPost'), 'error');
       return;
     }
-    if (!formData.image) {
-      showMessage('請選擇圖片', 'error');
-      return;
-    }
-    if (!formData.content.trim()) {
-      showMessage('請填寫故事文字', 'error');
+
+    const hasImage = !!formData.image;
+    const hasContent = !!formData.content.trim();
+
+    if (!hasImage && !hasContent) {
+      showMessage(t('alertTextOrImageRequired'), 'error');
       return;
     }
 
@@ -170,7 +173,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
         const newPost = data.post;
         setPosts(prev => [newPost, ...prev]);
 
-        showMessage('明信片已送出，等待管理員審核！', 'success', 5000);
+        showMessage(user && user.role === 'admin' ? t('alertUploadSuccessAdmin') : t('alertUploadSuccess'), 'success', 5000);
 
         // 重置表單
         setFormData({ image: null, content: '' });
@@ -182,11 +185,11 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
           setPendingPosts(prev => [newPost, ...prev]);
         }
       } else {
-        showMessage(data.message || '發布失敗，請稍後再試', 'error');
+        showMessage(data.message || t('alertUploadFailed'), 'error');
       }
     } catch (error) {
       console.error('[handleSubmitPost] Error:', error);
-      showMessage('網路連線失敗，請稍後再試', 'error');
+      showMessage(t('alertNetworkFailed'), 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -212,13 +215,13 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
         if (data.post) {
           setPosts(prev => [data.post, ...prev.filter(p => p._id !== postId)]);
         }
-        showMessage('✅ 明信片已核准上線！', 'success');
+        showMessage(t('alertApproveSuccess'), 'success');
       } else {
-        showMessage(data.message || '核准失敗', 'error');
+        showMessage(data.message || t('alertApproveFailed'), 'error');
       }
     } catch (error) {
       console.error('[handleApprove] Error:', error);
-      showMessage('核准失敗，請稍後再試', 'error');
+      showMessage(t('alertApproveFailed'), 'error');
     } finally {
       setApprovingId(null);
     }
@@ -228,7 +231,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
   //    成功後即時從 pendingPosts state filter 掉
   const handleDelete = async (postId, requireConfirm = false) => {
     if (requireConfirm) {
-      if (!window.confirm("確定要永久刪除這張明信片嗎？")) return;
+      if (!window.confirm(t('confirmDelete'))) return;
     }
 
     if (rejectingId) return; // 防止重複點擊
@@ -250,13 +253,13 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
         // 如果燈箱剛好開著被刪除的那張，同步關閉
         setLightboxPost(prev => (prev && prev._id === postId) ? null : prev);
         
-        showMessage('🗑️ 明信片已刪除', 'info');
+        showMessage(t('alertDeleteSuccess'), 'info');
       } else {
-        showMessage(data.message || '刪除失敗', 'error');
+        showMessage(data.message || t('alertDeleteFailed'), 'error');
       }
     } catch (error) {
       console.error('[handleDelete] Error:', error);
-      showMessage('刪除失敗，請稍後再試', 'error');
+      showMessage(t('alertDeleteFailed'), 'error');
     } finally {
       setRejectingId(null);
     }
@@ -266,7 +269,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
   const handleCommentSubmit = async (e, postId) => {
     e.preventDefault();
     if (!token) {
-      showMessage('請先登入才能留言', 'error');
+      showMessage(t('alertLoginRequiredComment'), 'error');
       return;
     }
     const text = commentInputs[postId]?.trim();
@@ -298,13 +301,13 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
         // 如果燈箱剛好開著，也同步更新燈箱內的資料
         setLightboxPost(prev => (prev && prev._id === postId) ? data.post : prev);
         
-        showMessage('留言成功！', 'success', 2000);
+        showMessage(t('alertCommentSuccess'), 'success', 2000);
       } else {
-        showMessage(data.message || '留言失敗', 'error');
+        showMessage(data.message || t('alertCommentFailed'), 'error');
       }
     } catch (error) {
       console.error('[handleCommentSubmit] Error:', error);
-      showMessage('網路錯誤，請稍後再試', 'error');
+      showMessage(t('alertNetworkError'), 'error');
     } finally {
       setSubmittingCommentId(null);
     }
@@ -383,14 +386,14 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
           marginBottom: '8px',
           letterSpacing: '-0.02em'
         }}>
-          🚂 時光驛站牆
+          {t('stationTitle')}
         </h1>
         <p style={{
           color: currentTheme.textSecondary,
           fontSize: '15px',
           margin: 0
         }}>
-          分享你的創作故事，與旅人們交流靈感
+          {t('stationDesc')}
         </p>
       </div>
 
@@ -426,7 +429,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
               letterSpacing: '0.02em'
             }}
           >
-            🌍 旅人明信片
+            {t('tabPublic')}
           </button>
 
           {/* 待審核驛站 Tab */}
@@ -454,7 +457,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
               position: 'relative'
             }}
           >
-            ⏳ 待審核驛站
+            {t('tabPending')}
             {pendingPosts.length > 0 && (
               <span style={{
                 position: 'absolute',
@@ -486,7 +489,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
             id="btn-open-post-form"
             onClick={() => {
               if (!token) {
-                showMessage('請先登入才能發布明信片 🔐', 'error');
+                showMessage(t('alertLoginRequiredPost'), 'error');
                 return;
               }
               setShowPostForm(true);
@@ -513,7 +516,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
               e.currentTarget.style.boxShadow = '0 6px 20px rgba(255, 107, 107, 0.4)';
             }}
           >
-            📮 掛上我的明信片
+            {t('btnOpenPostForm')}
           </button>
         ) : (
           <div style={{
@@ -533,7 +536,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
               fontWeight: '800',
               textAlign: 'center'
             }}>
-              📝 創作你的明信片
+              {t('createPostcard')}
             </h3>
 
             <form onSubmit={handleSubmitPost}>
@@ -548,7 +551,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em'
                 }}>
-                  📷 上傳圖片
+                  {t('uploadImage')}
                 </label>
                 <div
                   id="image-upload-zone"
@@ -571,7 +574,6 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     type="file"
                     accept="image/*"
                     onChange={handleImageChange}
-                    required
                     style={{
                       position: 'absolute',
                       top: 0, left: 0,
@@ -595,9 +597,9 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     <div>
                       <div style={{ fontSize: '36px', marginBottom: '8px' }}>📷</div>
                       <p style={{ color: currentTheme.textSecondary, fontSize: '14px', margin: 0 }}>
-                        點擊或拖曳圖片至此處上傳<br />
+                        {t('uploadHint')}<br />
                         <span style={{ fontSize: '12px', opacity: 0.7 }}>
-                          支援 JPG、PNG、GIF、WebP（最大 10MB）
+                          {t('uploadSupport')}
                         </span>
                       </p>
                     </div>
@@ -616,14 +618,13 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em'
                 }}>
-                  ✍️ 故事文字
+                  {t('storyText')}
                 </label>
                 <textarea
                   value={formData.content}
                   onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                  placeholder="分享你的創作故事、旅程心得、或一句觸動你的話..."
+                  placeholder={t('storyPlaceholder')}
                   maxLength="500"
-                  required
                   rows="4"
                   style={{
                     width: '100%',
@@ -674,7 +675,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     letterSpacing: '0.03em'
                   }}
                 >
-                  {isSubmitting ? '⏳ 上傳中...' : '📤 送出明信片'}
+                  {isSubmitting ? t('submitting') : t('btnSubmitPost')}
                 </button>
                 <button
                   type="button"
@@ -697,7 +698,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     transition: 'all 0.3s ease'
                   }}
                 >
-                  取消
+                  {t('cancel')}
                 </button>
               </div>
             </form>
@@ -739,7 +740,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
           fontWeight: '600',
           textAlign: 'center'
         }}>
-          🔍 以下為待審核明信片——圖片預設模糊，懸停可預覽。請仔細審核後再決定核准或婉拒。
+          {t('pendingExplain')}
         </div>
       )}
 
@@ -754,7 +755,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
           <div style={{ fontSize: '32px', marginBottom: '12px', animation: 'spin 1s linear infinite' }}>
             ⏳
           </div>
-          載入中...
+          {t('inspirationLoading')}
         </div>
       )}
 
@@ -800,80 +801,82 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                 }}
               >
                 {/* 圖片區域 */}
-                <div style={{
-                  position: 'relative',
-                  paddingTop: '66.67%', // 3:2 比例
-                  overflow: 'hidden',
-                  backgroundColor: theme === 'dark' ? '#111' : '#f0f0f0'
-                }}>
-                  {/* 管理員專用：刪除貼文按鈕（左上角） */}
-                  {user && user.role === 'admin' && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDelete(post._id, true); }}
+                {post.imageUrl && (
+                  <div style={{
+                    position: 'relative',
+                    paddingTop: '66.67%', // 3:2 比例
+                    overflow: 'hidden',
+                    backgroundColor: theme === 'dark' ? '#111' : '#f0f0f0'
+                  }}>
+                    {/* 管理員專用：刪除貼文按鈕（左上角） */}
+                    {user && user.role === 'admin' && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(post._id, true); }}
+                        style={{
+                          position: 'absolute',
+                          top: '10px',
+                          left: '10px',
+                          backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '32px',
+                          height: '32px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                          transition: 'all 0.2s',
+                          zIndex: 10
+                        }}
+                        title="刪除這張明信片"
+                        onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                        onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+                      >
+                        🗑️
+                      </button>
+                    )}
+
+                    <img
+                      src={post.imageUrl}
+                      alt="明信片"
+                      onClick={() => setLightboxPost(post)}
+                      /* ── 管理員待審核 Tab 的毛玻璃特效（Tailwind class）── */
+                      className={isAdminPendingTab ? 'blur-md hover:blur-none transition duration-300' : ''}
                       style={{
                         position: 'absolute',
-                        top: '10px',
-                        left: '10px',
-                        backgroundColor: 'rgba(239, 68, 68, 0.9)',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '32px',
-                        height: '32px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                        transition: 'all 0.2s',
-                        zIndex: 10
+                        top: 0, left: 0,
+                        width: '100%', height: '100%',
+                        objectFit: 'cover',
+                        transition: 'transform 0.4s ease',
+                        cursor: 'pointer'
                       }}
-                      title="刪除這張明信片"
-                      onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
-                      onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                      🗑️
-                    </button>
-                  )}
+                      onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.06)'; }}
+                      onMouseOut={(e)  => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    />
 
-                  <img
-                    src={post.imageUrl}
-                    alt="明信片"
-                    onClick={() => setLightboxPost(post)}
-                    /* ── 管理員待審核 Tab 的毛玻璃特效（Tailwind class）── */
-                    className={isAdminPendingTab ? 'blur-md hover:blur-none transition duration-300' : ''}
-                    style={{
-                      position: 'absolute',
-                      top: 0, left: 0,
-                      width: '100%', height: '100%',
-                      objectFit: 'cover',
-                      transition: 'transform 0.4s ease',
-                      cursor: 'pointer'
-                    }}
-                    onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.06)'; }}
-                    onMouseOut={(e)  => { e.currentTarget.style.transform = 'scale(1)'; }}
-                  />
-
-                  {/* 待審核標籤（右上角浮動徽章） */}
-                  {isPending && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '10px',
-                      right: '10px',
-                      backgroundColor: '#f59e0b',
-                      color: '#1a1a1a',
-                      fontSize: '11px',
-                      fontWeight: '900',
-                      padding: '4px 10px',
-                      borderRadius: '20px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                      letterSpacing: '0.05em',
-                      textTransform: 'uppercase'
-                    }}>
-                      ⏳ PENDING
-                    </div>
-                  )}
-                </div>
+                    {/* 待審核標籤（右上角浮動徽章） */}
+                    {isPending && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        backgroundColor: '#f59e0b',
+                        color: '#1a1a1a',
+                        fontSize: '11px',
+                        fontWeight: '900',
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase'
+                      }}>
+                        ⏳ PENDING
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* ── 普通用戶自己的 pending 卡片：明顯審核中提示橫幅 ─── */}
                 {isMyPendingCard && !(user && user.role === 'admin') && (
@@ -889,7 +892,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     fontWeight: '700'
                   }}>
                     <span style={{ fontSize: '16px' }}>📬</span>
-                    <span>明信片已送出，等待管理員審核！</span>
+                    <span>{t('myPendingCard')}</span>
                   </div>
                 )}
 
@@ -904,12 +907,16 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     : `2px solid ${theme === 'dark' ? '#2a2a2a' : '#e8d5c4'}`
                 }}>
                   {/* 作者資訊 + 日期 */}
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '12px'
-                  }}>
+                  <div 
+                    onClick={() => setLightboxPost(post)}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '12px',
+                      cursor: 'pointer'
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{
                         color: theme === 'dark' ? '#d4a96a' : '#8b7355',
@@ -929,8 +936,31 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                           fontWeight: '900',
                           letterSpacing: '0.04em'
                         }}>
-                          待審核
+                          {t('pendingBadge')}
                         </span>
+                      )}
+                      {/* 行內管理員刪除按鈕 */}
+                      {user && user.role === 'admin' && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(post._id, true); }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            padding: '2px 6px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '4px',
+                            transition: 'background 0.2s',
+                          }}
+                          onMouseOver={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
+                          onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                          title="刪除這張明信片"
+                        >
+                          🗑️
+                        </button>
                       )}
                     </div>
                     <span style={{
@@ -944,16 +974,22 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                   </div>
 
                   {/* 內文 */}
-                  <p style={{
-                    color: theme === 'dark' ? '#c8b89a' : '#5c4a3a',
-                    fontSize: '14px',
-                    lineHeight: '1.7',
-                    marginBottom: '16px',
-                    margin: '0 0 16px 0',
-                    wordBreak: 'break-word'
-                  }}>
-                    {post.content}
-                  </p>
+                  {post.content && (
+                    <p 
+                      onClick={() => setLightboxPost(post)}
+                      style={{
+                        color: theme === 'dark' ? '#c8b89a' : '#5c4a3a',
+                        fontSize: '14px',
+                        lineHeight: '1.7',
+                        marginBottom: '16px',
+                        margin: '0 0 16px 0',
+                        wordBreak: 'break-word',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {post.content}
+                    </p>
+                  )}
 
                   {/* 查看留言按鈕 */}
                   <button
@@ -977,7 +1013,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                       e.currentTarget.style.backgroundColor = theme === 'dark' ? '#2a2a2a' : '#e8d5c4';
                     }}
                   >
-                    💬 {expandedComments[post._id] ? '隱藏留言' : `查看留言 (${post.comments?.length || 0})`}
+                    💬 {expandedComments[post._id] ? t('hideComments') : `${t('showComments')} (${post.comments?.length || 0})`}
                   </button>
 
                   {/* 留言區塊（展開時顯示） */}
@@ -1004,7 +1040,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                         </div>
                       ) : (
                         <p style={{ fontSize: '13px', color: currentTheme.textSecondary, textAlign: 'center', marginBottom: '12px' }}>
-                          還沒有留言，來當第一個留言的人吧！
+                          {t('noComments')}
                         </p>
                       )}
 
@@ -1014,7 +1050,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                           type="text"
                           value={commentInputs[post._id] || ''}
                           onChange={(e) => setCommentInputs(prev => ({ ...prev, [post._id]: e.target.value }))}
-                          placeholder={token ? "寫下你的留言..." : "請先登入才能留言"}
+                          placeholder={token ? t('commentPlaceholder') : t('loginRequiredComment')}
                           disabled={!token || submittingCommentId === post._id}
                           style={{
                             flex: 1,
@@ -1047,7 +1083,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                             transition: 'all 0.2s'
                           }}
                         >
-                          送出
+                          {t('send')}
                         </button>
                       </form>
                     </div>
@@ -1150,8 +1186,8 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
           </div>
           <p style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>
             {activeTab === 'public'
-              ? '還沒有明信片，成為第一個分享者吧！'
-              : '沒有待審核的明信片，一切清空 ✨'}
+              ? t('emptyPublic')
+              : t('emptyPending')}
           </p>
         </div>
       )}
@@ -1204,7 +1240,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
               display: 'flex',
               flexDirection: window.innerWidth < 768 ? 'column' : 'row', // 手機版垂直排列
               width: '100%',
-              maxWidth: '1200px',
+              maxWidth: lightboxPost.imageUrl ? '1200px' : '500px',
               height: window.innerWidth < 768 ? 'auto' : '90vh',
               maxHeight: '90vh',
               backgroundColor: currentTheme.cardBg,
@@ -1215,34 +1251,36 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
             }}
           >
             {/* 左側：圖片區 (佔滿剩餘空間) */}
-            <div style={{
-              flex: 1,
-              backgroundColor: '#000',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              minHeight: window.innerWidth < 768 ? '40vh' : 'auto'
-            }}>
-              <img
-                src={lightboxPost.imageUrl}
-                alt="放大預覽"
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '100%',
-                  objectFit: 'contain'
-                }}
-              />
-            </div>
+            {lightboxPost.imageUrl && (
+              <div style={{
+                flex: 1,
+                backgroundColor: '#000',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                minHeight: window.innerWidth < 768 ? '40vh' : 'auto'
+              }}>
+                <img
+                  src={lightboxPost.imageUrl}
+                  alt="放大預覽"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    objectFit: 'contain'
+                  }}
+                />
+              </div>
+            )}
 
             {/* 右側：資訊與留言區 (固定寬度) */}
             <div style={{
-              width: window.innerWidth < 768 ? '100%' : '380px',
-              minWidth: window.innerWidth < 768 ? 'auto' : '380px',
+              width: lightboxPost.imageUrl ? (window.innerWidth < 768 ? '100%' : '380px') : '100%',
+              minWidth: lightboxPost.imageUrl ? (window.innerWidth < 768 ? 'auto' : '380px') : 'auto',
               display: 'flex',
               flexDirection: 'column',
               backgroundColor: currentTheme.cardBg,
-              borderLeft: window.innerWidth < 768 ? 'none' : `1px solid ${currentTheme.border}`,
+              borderLeft: (lightboxPost.imageUrl && window.innerWidth >= 768) ? `1px solid ${currentTheme.border}` : 'none',
               position: 'relative',
               height: window.innerWidth < 768 ? '50vh' : 'auto'
             }}>
@@ -1270,7 +1308,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                         onMouseOver={e => e.currentTarget.style.backgroundColor = '#dc2626'}
                         onMouseOut={e => e.currentTarget.style.backgroundColor = '#ef4444'}
                       >
-                        🗑️ 刪除
+                        {t('delete')}
                       </button>
                     )}
                   </div>
@@ -1280,17 +1318,19 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     })}
                   </span>
                 </div>
-                <p style={{
-                  color: theme === 'dark' ? '#c8b89a' : '#5c4a3a',
-                  fontSize: '14px',
-                  lineHeight: '1.6',
-                  margin: 0,
-                  wordBreak: 'break-word',
-                  maxHeight: '120px',
-                  overflowY: 'auto'
-                }}>
-                  {lightboxPost.content}
-                </p>
+                {lightboxPost.content && (
+                  <p style={{
+                    color: theme === 'dark' ? '#c8b89a' : '#5c4a3a',
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                    margin: 0,
+                    wordBreak: 'break-word',
+                    maxHeight: '120px',
+                    overflowY: 'auto'
+                  }}>
+                    {lightboxPost.content}
+                  </p>
+                )}
               </div>
 
               {/* 右側中間：留言列表 (可滾動) */}
@@ -1321,7 +1361,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: currentTheme.textSecondary, opacity: 0.7
                   }}>
                     <span style={{ fontSize: '40px', marginBottom: '8px' }}>💬</span>
-                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>成為第一個留言的人吧！</p>
+                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>{t('noComments')}</p>
                   </div>
                 )}
               </div>
@@ -1337,7 +1377,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     type="text"
                     value={commentInputs[lightboxPost._id] || ''}
                     onChange={(e) => setCommentInputs(prev => ({ ...prev, [lightboxPost._id]: e.target.value }))}
-                    placeholder={token ? "寫下你的留言..." : "請先登入才能留言"}
+                    placeholder={token ? t('commentPlaceholder') : t('loginRequiredComment')}
                     disabled={!token || submittingCommentId === lightboxPost._id || lightboxPost.status !== 'approved'}
                     style={{
                       flex: 1,
@@ -1370,12 +1410,12 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                       transition: 'all 0.2s'
                     }}
                   >
-                    送出
+                    {t('send')}
                   </button>
                 </form>
                 {lightboxPost.status !== 'approved' && (
                   <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '11px', color: '#f59e0b', fontWeight: 'bold' }}>
-                    ⏳ 待審核的明信片無法留言
+                    {t('pendingNoComment')}
                   </div>
                 )}
               </div>

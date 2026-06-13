@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 import SketchWall from './SketchWall';
 
@@ -662,6 +662,38 @@ function App() {
 
 
 
+  // ── 7. 手機版漢堡選單開關狀態 ────────────────────────────
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const mobileMenuRef = useRef(null);
+
+  // 點擊選單外部關閉
+
+  useEffect(() => {
+
+    const handleClickOutside = (e) => {
+
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+
+        setIsMobileMenuOpen(false);
+
+      }
+
+    };
+
+    if (isMobileMenuOpen) {
+
+      document.addEventListener('mousedown', handleClickOutside);
+
+    }
+
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+  }, [isMobileMenuOpen]);
+
+
+
   // ──────────────────────────────────────────────────────
 
   // Style helpers
@@ -688,7 +720,7 @@ function App() {
 
       gap: '5px',
 
-      padding: '9px 16px',
+      padding: '8px 12px',
 
       borderRadius: '10px',
 
@@ -874,7 +906,9 @@ function App() {
 
     <div style={{
 
-      backgroundColor: currentTheme.background,
+      background: isLight
+        ? 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e8edf5 100%)'
+        : 'linear-gradient(135deg, #0a0a0f 0%, #0f1117 50%, #111827 100%)',
 
       minHeight: '100vh',
 
@@ -890,9 +924,9 @@ function App() {
 
       color: currentTheme.text,
 
-      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 
-      transition: 'background-color 0.3s ease, color 0.3s ease',
+      transition: 'background 0.4s ease, color 0.3s ease',
 
       overflowX: 'hidden',
 
@@ -900,570 +934,629 @@ function App() {
 
 
 
-      {/* ── 頂部導覽列 ───────────────────────────────── */}
+      {/* ═══════════════════════════════════════════════════
+           頂部導覽列 — 毛玻璃 + RWD 漢堡選單
+      ═══════════════════════════════════════════════════ */}
 
-      <header style={{
+      <header
+        ref={mobileMenuRef}
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000,
+          background: isLight
+            ? 'rgba(248, 250, 252, 0.82)'
+            : 'rgba(10, 10, 15, 0.85)',
+          backdropFilter: 'blur(20px) saturate(1.8)',
+          WebkitBackdropFilter: 'blur(20px) saturate(1.8)',
+          borderBottom: isLight
+            ? '1px solid rgba(148, 163, 184, 0.18)'
+            : '1px solid rgba(255,255,255,0.06)',
+          boxShadow: isLight
+            ? '0 2px 20px rgba(0,0,0,0.06)'
+            : '0 2px 20px rgba(0,0,0,0.3)',
+          padding: '0',
+          transition: 'all 0.3s ease',
+        }}
+      >
 
-        position: 'sticky',
-
-        top: 0,
-
-        zIndex: 1000,
-
-        backgroundColor: currentTheme.navBg,
-
-        backdropFilter: 'blur(14px)',
-
-        borderBottom: 'none',
-
-        padding: '0',
-
-        transition: 'background-color 0.3s ease',
-
-      }}>
-
-        {/* 內容容器 - 全螢幕響應式 */}
-
+        {/* ── 主列（Logo + 桌面導覽 + 右側工具列） ── */}
         <div style={{
-
           width: '100%',
-
-          maxWidth: '100%',
-
-          margin: '0',
-
-          padding: '0 24px',
-
+          padding: '0 20px',
           display: 'flex',
-
           alignItems: 'center',
-
           justifyContent: 'space-between',
-
-          height: '60px',
-
-          gap: '16px',
-
+          height: '64px',
+          gap: '12px',
+          boxSizing: 'border-box',
         }}>
 
-          <div style={{
+          {/* ─ Logo ─ */}
+          <div 
+            onClick={() => setActiveView('explore')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              flexShrink: 0,
+              textDecoration: 'none',
+              cursor: 'pointer',
+            }}
+          >
 
-            display: 'flex',
-
-            alignItems: 'center',
-
-            gap: '8px', // 💡 這裡可以控制圖片和文字的距離，數字越小越近（例如：6px 或 4px）
-
-          }}>
-
-            <img
-
-              src={logoImg}
-
-              alt="Logo"
-
-              style={{
-
-                width: '50px',
-
-                height: '50px',
-
-                objectFit: 'contain'
-
-              }}
-
-            />
-
-            <span style={{
-
-              fontSize: '1.1rem',
-
-              fontWeight: '800',
-
-              color: currentTheme.text,
-
-              letterSpacing: '-0.5px',
-
+            <div style={{
+              width: '42px',
+              height: '42px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
             }}>
+              <img
+                src={logoImg}
+                alt="繪師驛站 Logo"
+                style={{ width: '42px', height: '42px', objectFit: 'contain' }}
+              />
+            </div>
 
-              繪師驛站
-
-            </span>
-
+            <div>
+              <div style={{
+                fontSize: '1.05rem',
+                fontWeight: '800',
+                letterSpacing: '-0.03em',
+                color: currentTheme.text,
+                lineHeight: '1.2',
+                whiteSpace: 'nowrap',
+              }}>
+                繪師驛站
+              </div>
+              <div style={{
+                fontSize: '0.65rem',
+                fontWeight: '500',
+                letterSpacing: '0.08em',
+                color: isLight ? '#94a3b8' : '#475569',
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+              }}>
+                Artist Tools
+              </div>
+            </div>
           </div>
 
 
-
-          {/* 導覽按鈕群組 - 響應式 */}
-
-          <nav style={{
-
-            display: 'flex',
-
-            alignItems: 'center',
-
-            gap: '4px',
-
-            overflowX: 'auto',
-
-            padding: '6px',
-
-            backgroundColor: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
-
-            borderRadius: '13px',
-
-            border: 'none',
-
-            maxWidth: 'calc(100% - 200px)',
-
-          }}>
+          {/* ─ 桌面版導覽列（md 以上顯示）─ */}
+          <nav
+            id="desktop-nav"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2px',
+              flex: 1,
+              justifyContent: 'center',
+              padding: '5px 8px',
+              background: isLight
+                ? 'rgba(0,0,0,0.04)'
+                : 'rgba(255,255,255,0.04)',
+              borderRadius: '14px',
+              border: isLight
+                ? '1px solid rgba(0,0,0,0.06)'
+                : '1px solid rgba(255,255,255,0.06)',
+              maxWidth: '760px',
+              flexWrap: 'wrap',
+            }}
+            className="hide-mobile"
+          >
 
             {NAV_TABS.map(tab => (
 
               <button
-
                 key={tab.id}
-
+                id={`nav-btn-${tab.id}`}
                 style={getNavBtnStyle(tab.id)}
-
                 onClick={() => {
-
                   if (tab.external) {
-
                     window.open(tab.url, '_blank');
-
                   } else {
-
                     setActiveView(tab.id);
-
                   }
-
                 }}
-
                 onMouseEnter={() => setHoveredTab(tab.id)}
-
                 onMouseLeave={() => setHoveredTab(null)}
-
               >
-
-                {tab.labelKey ? t(tab.labelKey) : tab.label}
-
-                {/* 外部連結圖示 */}
+                <span style={{ whiteSpace: 'nowrap' }}>
+                  {tab.labelKey ? t(tab.labelKey) : tab.label}
+                </span>
 
                 {tab.external && (
-
-                  <span style={{ fontSize: '0.7rem', marginLeft: '2px' }}>↗</span>
-
+                  <span style={{ fontSize: '0.65rem', marginLeft: '2px', opacity: 0.7 }}>↗</span>
                 )}
-
-                {/* 收藏數量徽章 */}
 
                 {tab.id === 'favorites' && safeSavedImages && safeSavedImages.length > 0 && (
-
                   <span style={{
-
                     backgroundColor: isLight ? '#3b82f6' : '#fb7185',
-
                     color: '#fff',
-
-                    fontSize: '0.7rem',
-
+                    fontSize: '0.65rem',
                     fontWeight: '800',
-
                     padding: '1px 5px',
-
                     borderRadius: '8px',
-
-                    lineHeight: '1.4',
-
-                    marginLeft: '2px',
-
+                    lineHeight: '1.5',
+                    marginLeft: '3px',
+                    flexShrink: 0,
                   }}>
-
                     {safeSavedImages.length}
-
                   </span>
-
                 )}
-
               </button>
 
             ))}
-
           </nav>
 
 
- <div style={{
-
+          {/* ─ 右側工具列 ─ */}
+          <div style={{
             display: 'flex',
-
             alignItems: 'center',
-
             gap: '6px',
-            marginLeft: 'auto',  // 👈 加上這一行，整塊就會帥氣地往最右邊靠齊！
-         paddingRight: '8px'
-
+            flexShrink: 0,
           }}>
 
-            {/* 數位時鐘顯示 */}
-
-            <div style={{
-
-              padding: '6px 12px',
-
-              borderRadius: '10px',
-
-              backgroundColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
-
-              color: currentTheme.text,
-
-              fontSize: '0.9rem',
-
-              fontWeight: '600',
-
-              fontFamily: 'monospace',
-
-              display: 'flex',
-
-              flexDirection: 'column',
-
-              alignItems: 'center',
-
-              gap: '2px',
-
-            }}>
-
-              <span style={{ fontSize: '1.1rem', fontWeight: '700' }}>
-
-                {currentTime.toLocaleTimeString('zh-TW', {
-
-                  hour: 'numeric',
-
-                  minute: '2-digit',
-
-                  hour12: true
-
-                })}
-
+            {/* 數位時鐘 (桌面顯示) */}
+            <div
+              className="hide-mobile"
+              style={{
+                padding: '5px 10px',
+                borderRadius: '10px',
+                background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
+                border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)',
+                color: currentTheme.text,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '1px',
+              }}
+            >
+              <span style={{ fontSize: '1.1rem', fontWeight: '700', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                {currentTime.toLocaleTimeString('zh-TW', { hour: 'numeric', minute: '2-digit', hour12: true })}
               </span>
-
-              <span style={{ fontSize: '0.75rem', fontWeight: '400', opacity: 0.8 }}>
-
-                {currentTime.toLocaleDateString('zh-TW', {
-
-                  year: 'numeric',
-
-                  month: 'long',
-
-                  day: 'numeric',
-
-                  weekday: 'long'
-
-                })}
-
+              <span style={{ fontSize: '0.72rem', fontWeight: '400', opacity: 0.65, whiteSpace: 'nowrap' }}>
+                {currentTime.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' })}
               </span>
-
             </div>
 
-            {/* 深色/淺色切換按鈕 */}
 
+            {/* 深色/淺色切換 */}
             <button
-
+              id="toggle-darkmode-btn"
               onClick={toggleDarkMode}
-
               disabled={autoTimeMode}
-
               title={autoTimeMode ? t('autoTimeModeEnabled') : t('toggleDarkMode')}
-
               style={{
-
-                padding: '8px 12px',
-
+                width: '38px',
+                height: '38px',
                 borderRadius: '10px',
-
                 border: 'none',
-
-                backgroundColor: autoTimeMode ? 'rgba(128,128,128,0.2)' : (isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'),
-
+                background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)',
                 color: autoTimeMode ? '#888' : currentTheme.text,
-
-                fontSize: '1.2rem',
-
+                fontSize: '1.1rem',
                 cursor: autoTimeMode ? 'not-allowed' : 'pointer',
-
                 transition: 'all 0.2s',
-
                 display: 'flex',
-
                 alignItems: 'center',
-
                 justifyContent: 'center',
-
-                opacity: autoTimeMode ? 0.5 : 1,
-
+                opacity: autoTimeMode ? 0.45 : 1,
+                flexShrink: 0,
               }}
-
               onMouseEnter={e => {
-
                 if (!autoTimeMode) {
-
-                  e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
-
-                  e.currentTarget.style.transform = 'scale(1.05)';
-
+                  e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.12)';
+                  e.currentTarget.style.transform = 'scale(1.08)';
                 }
-
               }}
-
               onMouseLeave={e => {
-
                 if (!autoTimeMode) {
-
-                  e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
-
+                  e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)';
                   e.currentTarget.style.transform = 'scale(1)';
-
                 }
-
               }}
-
             >
-
               {isDarkMode ? '🌙' : '☀️'}
-
             </button>
 
-            {/* 設定按鈕（僅登入後顯示） */}
 
+            {/* 設定按鈕（登入後） */}
             {user && (
-
               <button
-
+                id="settings-btn"
                 onClick={() => setShowSettingsModal(true)}
-
+                title={t('settings')}
                 style={{
-
-                  padding: '8px 12px',
-
+                  width: '38px',
+                  height: '38px',
                   borderRadius: '10px',
-
                   border: 'none',
-
-                  backgroundColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
-
+                  background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)',
                   color: currentTheme.text,
-
-                  fontSize: '1.2rem',
-
+                  fontSize: '1.1rem',
                   cursor: 'pointer',
-
                   transition: 'all 0.2s',
-
                   display: 'flex',
-
                   alignItems: 'center',
-
                   justifyContent: 'center',
-
+                  flexShrink: 0,
                 }}
-
                 onMouseEnter={e => {
-
-                  e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
-
-                  e.currentTarget.style.transform = 'scale(1.05)';
-
+                  e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.12)';
+                  e.currentTarget.style.transform = 'rotate(45deg) scale(1.08)';
                 }}
-
                 onMouseLeave={e => {
-
-                  e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
-
-                  e.currentTarget.style.transform = 'scale(1)';
-
+                  e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)';
+                  e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
                 }}
-
               >
-
                 ⚙️
-
               </button>
+            )}
 
+
+            {/* 用戶狀態 / 登入按鈕（桌面版） */}
+            {user ? (
+              <div
+                className="hide-mobile"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 10px',
+                  borderRadius: '10px',
+                  background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)',
+                  border: isLight ? '1px solid rgba(0,0,0,0.07)' : '1px solid rgba(255,255,255,0.07)',
+                }}>
+                  <span style={{ fontSize: '1rem' }}>👤</span>
+                  <span style={{
+                    color: currentTheme.text,
+                    fontSize: '0.82rem',
+                    fontWeight: '600',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '120px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>
+                    {user.displayName || user.username}
+                  </span>
+                  {user.role === 'admin' && (
+                    <span style={{
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      background: '#ef4444',
+                      color: '#fff',
+                      fontSize: '0.6rem',
+                      fontWeight: '700',
+                      letterSpacing: '0.05em',
+                      flexShrink: 0,
+                    }}>
+                      ADMIN
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  id="logout-btn"
+                  onClick={handleLogout}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '9px',
+                    border: `1px solid ${currentTheme.border}`,
+                    background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)',
+                    color: isLight ? '#64748b' : '#94a3b8',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                    e.currentTarget.style.color = '#ef4444';
+                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)';
+                    e.currentTarget.style.color = isLight ? '#64748b' : '#94a3b8';
+                    e.currentTarget.style.borderColor = currentTheme.border;
+                  }}
+                >
+                  {t('logout')}
+                </button>
+              </div>
+            ) : (
+              <button
+                id="login-btn-desktop"
+                className="hide-mobile"
+                onClick={() => { setShowAuthModal(true); setAuthMode('login'); setAuthError(''); }}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: '10px',
+                  border: isLight ? '1.5px solid rgba(59,130,246,0.4)' : '1.5px solid rgba(251,113,133,0.4)',
+                  background: isLight ? 'rgba(59,130,246,0.1)' : 'rgba(251,113,133,0.1)',
+                  color: isLight ? '#3b82f6' : '#fb7185',
+                  fontSize: '0.83rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.22s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = isLight ? 'rgba(59,130,246,0.2)' : 'rgba(251,113,133,0.2)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = isLight ? '0 4px 12px rgba(59,130,246,0.25)' : '0 4px 12px rgba(251,113,133,0.25)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = isLight ? 'rgba(59,130,246,0.1)' : 'rgba(251,113,133,0.1)';
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <span>👤</span>
+                <span style={{ whiteSpace: 'nowrap' }}>{t('login')} / {t('register')}</span>
+              </button>
+            )}
+
+
+            {/* ── 漢堡選單按鈕（手機版）─────────────────────── */}
+            <button
+              id="hamburger-btn"
+              className="show-mobile"
+              aria-label="開啟選單"
+              aria-expanded={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen(prev => !prev)}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '11px',
+                border: isLight
+                  ? '1.5px solid rgba(0,0,0,0.1)'
+                  : '1.5px solid rgba(255,255,255,0.12)',
+                background: isMobileMenuOpen
+                  ? (isLight ? 'rgba(59,130,246,0.12)' : 'rgba(251,113,133,0.12)')
+                  : (isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)'),
+                cursor: 'pointer',
+                transition: 'all 0.22s',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                padding: '9px',
+                flexShrink: 0,
+              }}
+            >
+              {/* 三條線動態變叉 */}
+              {[0, 1, 2].map(i => (
+                <span
+                  key={i}
+                  style={{
+                    display: 'block',
+                    width: '20px',
+                    height: '2px',
+                    borderRadius: '2px',
+                    background: isMobileMenuOpen
+                      ? (isLight ? '#3b82f6' : '#fb7185')
+                      : currentTheme.text,
+                    transformOrigin: 'center',
+                    transition: 'all 0.25s cubic-bezier(0.4,0,0.2,1)',
+                    transform: isMobileMenuOpen
+                      ? i === 0 ? 'translateY(7px) rotate(45deg)'
+                        : i === 1 ? 'scaleX(0) opacity(0)'
+                        : 'translateY(-7px) rotate(-45deg)'
+                      : 'none',
+                    opacity: isMobileMenuOpen && i === 1 ? 0 : 1,
+                  }}
+                />
+              ))}
+            </button>
+
+          </div>
+        </div>
+
+
+        {/* ── 手機版下拉選單（僅手機顯示）─────────────────── */}
+        {isMobileMenuOpen && (
+          <div
+            className="mobile-menu-enter show-mobile"
+            style={{
+              width: '100%',
+              padding: '12px 16px 20px',
+              borderTop: isLight
+                ? '1px solid rgba(0,0,0,0.07)'
+                : '1px solid rgba(255,255,255,0.06)',
+              background: isLight
+                ? 'rgba(248, 250, 252, 0.95)'
+                : 'rgba(10, 10, 15, 0.95)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+            }}
+          >
+
+            {/* 導覽按鈕 */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+              marginBottom: '8px',
+            }}>
+              {NAV_TABS.map((tab, idx) => {
+                const isActive = activeView === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    id={`mobile-nav-btn-${tab.id}`}
+                    onClick={() => {
+                      if (tab.external) {
+                        window.open(tab.url, '_blank');
+                      } else {
+                        setActiveView(tab.id);
+                      }
+                      setIsMobileMenuOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderRadius: '12px',
+                      border: isActive
+                        ? (isLight ? '1.5px solid rgba(59,130,246,0.35)' : '1.5px solid rgba(251,113,133,0.35)')
+                        : (isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)'),
+                      background: isActive
+                        ? (isLight ? 'rgba(59,130,246,0.1)' : 'rgba(251,113,133,0.1)')
+                        : (isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)'),
+                      color: isActive
+                        ? (isLight ? '#3b82f6' : '#fb7185')
+                        : currentTheme.text,
+                      fontWeight: isActive ? '700' : '500',
+                      fontSize: '0.92rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.18s',
+                      animation: `fadeInUp 0.2s ease ${idx * 0.04}s both`,
+                      textAlign: 'left',
+                    }}
+                  >
+                    <span style={{ whiteSpace: 'nowrap' }}>
+                      {tab.labelKey ? t(tab.labelKey) : tab.label}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {tab.id === 'favorites' && safeSavedImages.length > 0 && (
+                        <span style={{
+                          background: isLight ? '#3b82f6' : '#fb7185',
+                          color: '#fff',
+                          fontSize: '0.65rem',
+                          fontWeight: '800',
+                          padding: '1px 6px',
+                          borderRadius: '8px',
+                        }}>
+                          {safeSavedImages.length}
+                        </span>
+                      )}
+                      {isActive && <span style={{ fontSize: '0.8rem' }}>✓</span>}
+                      {tab.external && <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>↗</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 分隔線 */}
+            <div style={{
+              height: '1px',
+              background: isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.07)',
+              margin: '4px 0',
+            }} />
+
+            {/* 時鐘（手機版） */}
+            <div style={{
+              padding: '10px 16px',
+              borderRadius: '12px',
+              background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
+              border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              animation: 'fadeInUp 0.25s ease 0.15s both',
+            }}>
+              <span style={{ fontFamily: 'monospace', fontSize: '1.2rem', fontWeight: '700', color: currentTheme.text }}>
+                {currentTime.toLocaleTimeString('zh-TW', { hour: 'numeric', minute: '2-digit', hour12: true })}
+              </span>
+              <span style={{ fontSize: '0.82rem', color: isLight ? '#94a3b8' : '#475569' }}>
+                {currentTime.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' })}
+              </span>
+            </div>
+
+            {/* 用戶區（手機版） */}
+            {user ? (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
+                border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)',
+                animation: 'fadeInUp 0.25s ease 0.2s both',
+              }}>
+                <span style={{ fontSize: '1.1rem' }}>👤</span>
+                <span style={{
+                  flex: 1,
+                  fontSize: '0.88rem',
+                  fontWeight: '600',
+                  color: currentTheme.text,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {user.displayName || user.username}
+                </span>
+                <button
+                  onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    background: 'rgba(239,68,68,0.1)',
+                    color: '#ef4444',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {t('logout')}
+                </button>
+              </div>
+            ) : (
+              <button
+                id="login-btn-mobile"
+                onClick={() => {
+                  setShowAuthModal(true);
+                  setAuthMode('login');
+                  setAuthError('');
+                  setIsMobileMenuOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '13px',
+                  borderRadius: '12px',
+                  border: isLight ? '1.5px solid rgba(59,130,246,0.4)' : '1.5px solid rgba(251,113,133,0.4)',
+                  background: isLight
+                    ? 'linear-gradient(135deg, rgba(59,130,246,0.12), rgba(139,92,246,0.1))'
+                    : 'linear-gradient(135deg, rgba(251,113,133,0.12), rgba(244,63,94,0.1))',
+                  color: isLight ? '#3b82f6' : '#fb7185',
+                  fontSize: '0.9rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  animation: 'fadeInUp 0.25s ease 0.22s both',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span>👤</span>
+                <span>{t('login')} / {t('register')}</span>
+              </button>
             )}
 
           </div>
-
-          {/* 右側控制區（時鐘、背景切換、設定） */}
-
-         
-
-
-          {/* 登入/註冊按鈕 */}
-
-          {user ? (
-
-            <div style={{
-
-              display: 'flex',
-
-              alignItems: 'center',
-
-              gap: '8px',
-
-              marginRight: '60px'
-
-            }}>
-
-              <span style={{
-
-                color: currentTheme.text,
-
-                fontSize: '0.85rem',
-
-                fontWeight: '500',
-
-              }}>
-
-                👤 {user.displayName || user.username}
-                {user.role === 'admin' && (
-                  <span style={{
-                    marginLeft: '8px',
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    backgroundColor: '#ef4444',
-                    color: '#fff',
-                    fontSize: '0.7rem',
-                    fontWeight: 'bold',
-                  }}>
-                    ADMIN
-                  </span>
-                )}
-
-              </span>
-
-              <button
-
-                onClick={handleLogout}
-
-                style={{
-
-                  padding: '6px 14px',
-
-                  borderRadius: '8px',
-
-                  border: `1px solid ${currentTheme.border}`,
-
-                  backgroundColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
-
-                  color: isLight ? '#6b7280' : '#9ca3af',
-
-                  fontSize: '0.8rem',
-
-                  fontWeight: '600',
-
-                  cursor: 'pointer',
-
-                  transition: 'all 0.2s',
-
-                }}
-
-                onMouseEnter={e => {
-
-                  e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
-
-                  e.currentTarget.style.color = '#ef4444';
-
-                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-
-                }}
-
-                onMouseLeave={e => {
-
-                  e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
-
-                  e.currentTarget.style.color = isLight ? '#6b7280' : '#9ca3af';
-
-                  e.currentTarget.style.borderColor = currentTheme.border;
-
-                }}
-
-              >
-
-                登出
-
-              </button>
-
-            </div>
-
-          ) : (
-
-            <button
-
-              onClick={() => {
-
-                setShowAuthModal(true);
-
-                setAuthMode('login');
-
-                setAuthError('');
-
-              }}
-
-              style={{
-
-                padding: '8px 16px',
-
-                borderRadius: '10px',
-
-                marginRight: '60px',
-
-                border: isLight ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(251, 113, 133, 0.4)',
-
-                backgroundColor: isLight ? 'rgba(59, 130, 246, 0.12)' : 'rgba(251, 113, 133, 0.12)',
-
-                color: isLight ? '#3b82f6' : '#fb7185',
-
-                fontSize: '0.85rem',
-
-                fontWeight: '600',
-
-                cursor: 'pointer',
-
-                transition: 'all 0.2s',
-
-                display: 'flex',
-
-                alignItems: 'center',
-
-                gap: '6px',
-
-              }}
-
-              onMouseEnter={e => {
-
-                e.currentTarget.style.backgroundColor = isLight ? 'rgba(59, 130, 246, 0.22)' : 'rgba(251, 113, 133, 0.22)';
-
-                e.currentTarget.style.transform = 'translateY(-1px)';
-
-              }}
-
-              onMouseLeave={e => {
-
-                e.currentTarget.style.backgroundColor = isLight ? 'rgba(59, 130, 246, 0.12)' : 'rgba(251, 113, 133, 0.12)';
-
-                e.currentTarget.style.transform = 'none';
-
-              }}
-
-            >
-
-              👤 登入/註冊
-
-            </button>
-
-          )}
-
-        </div>
+        )}
 
       </header>
 
@@ -1472,21 +1565,14 @@ function App() {
       {/* ── 主內容區（全螢幕響應式）─────────────────── */}
 
       <main style={{
-
         width: '100%',
-
         maxWidth: '100%',
-
         margin: '0',
-
-        padding: '32px 24px 60px',
-
+        padding: 'clamp(16px, 3vw, 32px) clamp(12px, 3vw, 24px) 60px',
         boxSizing: 'border-box',
-
+        flex: 1,
       }}>
-
         {renderView()}
-
       </main>
 
 
@@ -1967,128 +2053,151 @@ function App() {
 
       )}
 
-      {/* 頁尾 */}
+      {/* ── 頁尾 ─────────────────────────────────────────── */}
 <footer style={{
-  padding: '60px 20px 40px 20px',
-  borderTop: `1px solid ${currentTheme.border}`,
-  backgroundColor: currentTheme.bg,
+  padding: 'clamp(40px, 6vw, 72px) clamp(16px, 4vw, 40px) clamp(24px, 4vw, 40px)',
+  borderTop: isLight
+    ? '1px solid rgba(148,163,184,0.2)'
+    : '1px solid rgba(255,255,255,0.06)',
+  background: isLight
+    ? 'rgba(248,250,252,0.8)'
+    : 'rgba(10,10,15,0.8)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
   color: currentTheme.text,
   fontSize: '0.9rem',
+  letterSpacing: '0.01em',
 }}>
   <div style={{
     maxWidth: '1200px',
     margin: '0 auto',
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-    gap: '40px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: 'clamp(24px, 4vw, 48px)',
   }}>
-    {/* 區塊一：關於 */}
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <h4 style={{
-        margin: '0 0 15px 0',
-        fontSize: '1.1rem',
-        fontWeight: '600',
-        color: isLight ? '#3b82f6' : '#fb7185',
-        letterSpacing: '1px'
-      }}>
-        關於畫師驛站
-      </h4>
+
+    {/* 關於 */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+        <div style={{
+          width: '32px', height: '32px', borderRadius: '8px',
+          background: isLight ? 'linear-gradient(135deg, #dbeafe, #bfdbfe)' : 'linear-gradient(135deg, #1e1b4b, #312e81)',
+          border: isLight ? '1px solid rgba(59,130,246,0.25)' : '1px solid rgba(99,102,241,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '1rem',
+        }}>
+          🖌️
+        </div>
+        <h4 style={{
+          margin: '0',
+          fontSize: '1rem',
+          fontWeight: '700',
+          color: isLight ? '#3b82f6' : '#fb7185',
+          letterSpacing: '-0.01em',
+        }}>
+          {t('footerAbout')}
+        </h4>
+      </div>
       <p style={{
         margin: '0',
-        lineHeight: '1.7',
-        opacity: 0.8
+        lineHeight: '1.75',
+        color: isLight ? '#64748b' : '#64748b',
+        fontSize: '0.875rem',
       }}>
-        專為藝術創作者打造的數位工具箱。提供隨機繪畫靈感、精選色彩搭配與速寫練習功能，陪伴妳的創作每一天。
+        {t('footerAboutDesc')}
       </p>
     </div>
 
-    {/* 區塊二：連結 */}
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
+    {/* 快捷連結 */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <h4 style={{
-        margin: '0 0 15px 0',
-        fontSize: '1.1rem',
-        fontWeight: '600',
+        margin: '0 0 4px 0',
+        fontSize: '1rem',
+        fontWeight: '700',
         color: isLight ? '#3b82f6' : '#fb7185',
-        letterSpacing: '1px'
+        letterSpacing: '-0.01em',
       }}>
-        快捷連結
+        {t('footerQuickLinks')}
       </h4>
-      <ul style={{
-        margin: '0',
-        padding: 0,
-        listStyle: 'none',
-      }}>
-        <li style={{ marginBottom: '12px' }}>
+      <ul style={{ margin: '0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <li>
           <a
             href="https://bukutori.github.io/devfolio-1.0.0/"
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              color: currentTheme.text,
+              color: isLight ? '#64748b' : '#64748b',
               textDecoration: 'none',
-              opacity: 0.8,
-              transition: 'all 0.2s ease',
+              fontSize: '0.875rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'color 0.2s',
             }}
-            onMouseOver={(e) => {
-              e.target.style.opacity = '1';
-              e.target.style.color = isLight ? '#3b82f6' : '#fb7185';
-            }}
-            onMouseOut={(e) => {
-              e.target.style.opacity = '0.8';
-              e.target.style.color = currentTheme.text;
-            }}
+            onMouseOver={e => { e.currentTarget.style.color = isLight ? '#3b82f6' : '#fb7185'; }}
+            onMouseOut={e => { e.currentTarget.style.color = isLight ? '#64748b' : '#64748b'; }}
           >
-            我的個人網站
+            <span style={{ fontSize: '0.85rem' }}>↗</span>
+            {t('footerMySite')}
           </a>
         </li>
       </ul>
     </div>
 
-    {/* 區塊三：驛站連線狀態 */}
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
+    {/* 連線狀態 */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <h4 style={{
-        margin: '0 0 15px 0',
-        fontSize: '1.1rem',
-        fontWeight: '600',
+        margin: '0 0 4px 0',
+        fontSize: '1rem',
+        fontWeight: '700',
         color: isLight ? '#3b82f6' : '#fb7185',
-        letterSpacing: '1px'
+        letterSpacing: '-0.01em',
       }}>
-        驛站連線狀態
+        {t('footerStatus')}
       </h4>
       <p style={{
-        margin: '0 0 15px 0',
-        lineHeight: '1.7',
-        opacity: 0.8
+        margin: '0 0 12px 0',
+        lineHeight: '1.75',
+        color: isLight ? '#64748b' : '#64748b',
+        fontSize: '0.875rem',
       }}>
-        雲端資料庫（MongoDB）已同步連線。歡迎前往交流討論版留下一期一會的創作足跡！
+        {t('footerStatusDesc')}
       </p>
-      <div>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
         <span style={{
-          display: 'inline-block',
-          fontSize: '0.8rem',
-          padding: '4px 8px',
-          borderRadius: '4px',
-          backgroundColor: isLight ? '#e0f2fe' : '#311523',
-          color: isLight ? '#0369a1' : '#f43f5e',
-          fontWeight: '500'
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '5px',
+          fontSize: '0.75rem',
+          padding: '4px 10px',
+          borderRadius: '20px',
+          background: isLight ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.15)',
+          border: '1px solid rgba(16,185,129,0.3)',
+          color: isLight ? '#059669' : '#34d399',
+          fontWeight: '600',
         }}>
-          全球多伺服器同步中
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+          {t('footerStatusSynced')}
         </span>
       </div>
     </div>
   </div>
 
-  {/* 底部版權列 - 確保視覺收尾與橫向置中對齊 */}
+  {/* 底部版權 */}
   <div style={{
     maxWidth: '1200px',
     margin: '40px auto 0 auto',
     paddingTop: '20px',
-    borderTop: `1px solid ${currentTheme.border}`,
+    borderTop: isLight ? '1px solid rgba(148,163,184,0.15)' : '1px solid rgba(255,255,255,0.06)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
     opacity: 0.5,
-    fontSize: '0.8rem',
-    textAlign: 'center'
+    fontSize: '0.78rem',
+    textAlign: 'center',
   }}>
-    © 2024 - {new Date().getFullYear()} 藝術創作工具箱 All rights reserved.
+    © 2024 – {new Date().getFullYear()} {t('footerCopyright')} · All rights reserved.
   </div>
 </footer>
 

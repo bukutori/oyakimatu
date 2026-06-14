@@ -444,6 +444,11 @@ router.post('/:id/like', verifyToken, async (req, res) => {
       });
     }
 
+    // 確保 likes 為陣列（相容歷史資料）
+    if (!post.likes) {
+      post.likes = [];
+    }
+
     // 將 ObjectId 轉為字串做比較
     const likesStringArray = post.likes.map(l => l.toString());
     const alreadyLiked = likesStringArray.includes(userId);

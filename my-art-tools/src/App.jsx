@@ -1465,6 +1465,7 @@ function App() {
                                   {notif.type === 'apply' && '📬'}
                                   {notif.type === 'approved' && '✅'}
                                   {notif.type === 'comment' && '💬'}
+                                  {notif.type === 'like' && '❤️'}
                                 </span>
                                 <div style={{ flex: 1, fontSize: '0.78rem', color: currentTheme.text, lineHeight: '1.4', textAlign: 'left' }}>
                                   <strong>{notif.senderName}</strong> {notif.message.replace(notif.senderName, '').trim()}

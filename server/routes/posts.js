@@ -459,6 +459,22 @@ router.post('/:id/like', verifyToken, async (req, res) => {
     } else {
       // 按讚：加入
       post.likes.push(userId);
+
+      // ── 通知觸發：按讚 → 通知明信片作者（自己點讚不通知） ─────────────────
+      if (post.userId !== userId) {
+        try {
+          await Notification.create({
+            recipient: post.userId,
+            sender: userId,
+            senderName: req.user.username,
+            type: 'like',
+            relatedPost: post._id,
+            message: `${req.user.username} 喜歡你的明信片`,
+          });
+        } catch (notifErr) {
+          console.error('[POST /api/posts/:id/like] 通知發送失敗:', notifErr);
+        }
+      }
     }
 
     await post.save();

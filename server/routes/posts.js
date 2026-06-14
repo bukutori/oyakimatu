@@ -32,6 +32,8 @@ const jwt       = require('jsonwebtoken');
 const multer    = require('multer');
 
 const Post                       = require('../models/Post');
+const Notification               = require('../models/Notification');
+const User                       = require('../models/User');
 const { verifyToken, requireAdmin, JWT_SECRET } = require('../middleware/auth');
 const { storage }                = require('../config/cloudinary');
 
@@ -83,6 +85,28 @@ router.post('/', verifyToken, upload.single('image'), async (req, res) => {
     await newPost.save();
 
     console.log(`[POST /api/posts] 新明信片已建立: ${newPost._id} by ${req.user.username} (status: ${status})`);
+
+    // ── 通知觸發：一般用戶發文 → 通知所有管理員 ──────────────────────────
+    if (!isAdmin) {
+      try {
+        const admins = await User.find({ role: 'admin' }).select('id').lean();
+        const notifications = admins.map(admin => ({
+          recipient: admin.id,
+          sender: req.user.id,
+          senderName: req.user.username,
+          type: 'apply',
+          relatedPost: newPost._id,
+          message: `${req.user.username} 發布了一張新明信片，等待審核`,
+        }));
+        if (notifications.length > 0) {
+          await Notification.insertMany(notifications);
+          console.log(`[POST /api/posts] 已通知 ${admins.length} 位管理員`);
+        }
+      } catch (notifErr) {
+        console.error('[POST /api/posts] 通知發送失敗:', notifErr);
+        // 通知失敗不影響發文流程
+      }
+    }
 
     return res.status(201).json({
       success: true,
@@ -217,6 +241,20 @@ router.put('/:id/approve', verifyToken, requireAdmin, async (req, res) => {
 
     console.log(`[PUT /api/posts/${id}/approve] 管理員 ${req.user.username} 核准了明信片 by ${post.username}`);
 
+    // ── 通知觸發：管理員核准 → 通知貼文作者 ─────────────────────────────
+    try {
+      await Notification.create({
+        recipient: post.userId,
+        sender: req.user.id,
+        senderName: req.user.username,
+        type: 'approved',
+        relatedPost: post._id,
+        message: '你的明信片已通過審核，已在驛站牆上展示！',
+      });
+    } catch (notifErr) {
+      console.error('[PUT /api/posts/:id/approve] 通知發送失敗:', notifErr);
+    }
+
     return res.json({
       success: true,
       message: '明信片已審核通過',
@@ -299,6 +337,22 @@ router.post('/:id/comment', verifyToken, async (req, res) => {
 
     await post.save();
 
+    // ── 通知觸發：留言 → 通知明信片作者（自己留言不通知）─────────────────
+    if (post.userId !== req.user.id) {
+      try {
+        await Notification.create({
+          recipient: post.userId,
+          sender: req.user.id,
+          senderName: req.user.username,
+          type: 'comment',
+          relatedPost: post._id,
+          message: `${req.user.username} 在你的明信片上留了言`,
+        });
+      } catch (notifErr) {
+        console.error('[POST /api/posts/:id/comment] 通知發送失敗:', notifErr);
+      }
+    }
+
     return res.json({
       success: true,
       message: '留言新增成功',
@@ -365,6 +419,56 @@ router.put('/notifications/read-all', verifyToken, async (req, res) => {
 
   } catch (err) {
     console.error('[PUT /api/posts/notifications/read-all] Error:', err);
+    return res.status(500).json({
+      success: false,
+      message: '伺服器發生錯誤'
+    });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/posts/:id/like
+// 按讚 / 取消按讚（Toggle）
+// ── 檢查 likes 陣列是否已包含當前用戶 → 包含則移除，不包含則加入
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/:id/like', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const post = await Post.findById(id);
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: '明信片不存在'
+      });
+    }
+
+    // 將 ObjectId 轉為字串做比較
+    const likesStringArray = post.likes.map(l => l.toString());
+    const alreadyLiked = likesStringArray.includes(userId);
+
+    if (alreadyLiked) {
+      // 取消按讚：移除
+      post.likes = post.likes.filter(l => l.toString() !== userId);
+    } else {
+      // 按讚：加入
+      post.likes.push(userId);
+    }
+
+    await post.save();
+
+    console.log(`[POST /api/posts/${id}/like] ${req.user.username} ${alreadyLiked ? '取消按讚' : '按讚'} (likes: ${post.likes.length})`);
+
+    return res.json({
+      success: true,
+      liked: !alreadyLiked,
+      likesCount: post.likes.length,
+      likes: post.likes
+    });
+
+  } catch (err) {
+    console.error('[POST /api/posts/:id/like] Error:', err);
     return res.status(500).json({
       success: false,
       message: '伺服器發生錯誤'

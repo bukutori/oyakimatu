@@ -30,12 +30,20 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
   // ── State ────────────────────────────────────────────────────────────────────
   const [posts, setPosts]                   = useState([]);           // approved + 自己的 pending（普通用戶）
   const [pendingPosts, setPendingPosts]     = useState([]);           // 全部 pending（管理員專用）
-  const [activeTab, setActiveTab]           = useState('public');
+  const [activeTab, setActiveTab]           = useState(() => {
+    const saved = window.__stationWallInitialTab;
+    if (saved) {
+      window.__stationWallInitialTab = null;
+      return saved;
+    }
+    return 'public';
+  });
   const [showPostForm, setShowPostForm]     = useState(false);
   const [formData, setFormData]             = useState({ image: null, content: '' });
   const [imagePreview, setImagePreview]     = useState(null);
   const [message, setMessage]               = useState('');
   const [messageType, setMessageType]       = useState('info');       // 'info' | 'success' | 'error'
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   const [isSubmitting, setIsSubmitting]     = useState(false);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [approvingId, setApprovingId]       = useState(null);         // 防止重複點擊
@@ -46,8 +54,6 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
   const [commentInputs, setCommentInputs]   = useState({});
   const [expandedComments, setExpandedComments] = useState({});
   const [submittingCommentId, setSubmittingCommentId] = useState(null);
-
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   // ── 顯示訊息工具函式 ─────────────────────────────────────────────────────────
   const showMessage = (text, type = 'info', duration = 4000) => {
@@ -102,6 +108,16 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
       console.error('[fetchPendingPosts] 網路錯誤:', error);
     }
   }, [API_BASE, token, user]);
+
+  useEffect(() => {
+    const handleSwitchTab = (e) => {
+      if (e.detail) {
+        setActiveTab(e.detail);
+      }
+    };
+    window.addEventListener('switch-station-tab', handleSwitchTab);
+    return () => window.removeEventListener('switch-station-tab', handleSwitchTab);
+  }, []);
 
   // ── useEffect 初始化 ─────────────────────────────────────────────────────────
   //    每次 token 變動（登入/登出/跨裝置）都重新撈取，解決資料消失問題
@@ -310,6 +326,89 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
       showMessage(t('alertNetworkError'), 'error');
     } finally {
       setSubmittingCommentId(null);
+    }
+  };
+
+  const hasLiked = (post) => {
+    if (!user || !post.likes) return false;
+    return post.likes.includes(user.id);
+  };
+
+  const handleLikeToggle = async (postId) => {
+    if (!token || !user) {
+      showMessage(t('alertLoginRequiredLike'), 'error');
+      return;
+    }
+
+    let originalPost = null;
+    let originalPendingPost = null;
+
+    const findAndToggle = (list, isPendingList) => {
+      return list.map(p => {
+        if (p._id === postId) {
+          if (isPendingList) originalPendingPost = { ...p };
+          else originalPost = { ...p };
+
+          const likes = p.likes ? [...p.likes] : [];
+          const index = likes.indexOf(user.id);
+          if (index > -1) {
+            likes.splice(index, 1);
+          } else {
+            likes.push(user.id);
+          }
+          const updated = { ...p, likes };
+          if (lightboxPost && lightboxPost._id === postId) {
+            setLightboxPost(updated);
+          }
+          return updated;
+        }
+        return p;
+      });
+    };
+
+    setPosts(prev => findAndToggle(prev, false));
+    setPendingPosts(prev => findAndToggle(prev, true));
+
+    try {
+      const response = await fetch(`${API_BASE}/api/posts/${postId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || '按讚失敗');
+      }
+
+      const updateFromApi = (list) => {
+        return list.map(p => {
+          if (p._id === postId) {
+            const updated = { ...p, likes: data.likes };
+            if (lightboxPost && lightboxPost._id === postId) {
+              setLightboxPost(updated);
+            }
+            return updated;
+          }
+          return p;
+        });
+      };
+      setPosts(prev => updateFromApi(prev));
+      setPendingPosts(prev => updateFromApi(prev));
+
+    } catch (err) {
+      console.error('[handleLikeToggle] 發生錯誤:', err);
+      const rollback = (list, original) => {
+        if (!original) return list;
+        return list.map(p => p._id === postId ? original : p);
+      };
+      setPosts(prev => rollback(prev, originalPost));
+      setPendingPosts(prev => rollback(prev, originalPendingPost));
+      if (lightboxPost && lightboxPost._id === postId) {
+        setLightboxPost(originalPost || originalPendingPost);
+      }
+      showMessage(t('alertNetworkError'), 'error');
     }
   };
 
@@ -991,6 +1090,56 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     </p>
                   )}
 
+                  {/* 按讚與留言數量工具列 */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '12px',
+                  }}>
+                    {/* 愛心按鈕 */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleLikeToggle(post._id); }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                        transition: 'all 0.2s',
+                        color: hasLiked(post) ? '#ef4444' : (theme === 'dark' ? '#c8b89a' : '#5c4a3a'),
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.transform = 'scale(1.08)';
+                        e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+                      }}
+                    >
+                      <span style={{ 
+                        fontSize: '1.1rem',
+                        transition: 'transform 0.15s ease',
+                        display: 'inline-block',
+                      }}>
+                        {hasLiked(post) ? '❤️' : '🤍'}
+                      </span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>
+                        {post.likes ? post.likes.length : 0} {t('likeCount')}
+                      </span>
+                    </button>
+
+                    {/* 留言數 */}
+                    <span style={{ fontSize: '0.85rem', color: theme === 'dark' ? '#8a7a60' : '#8b7355' }}>
+                      💬 {post.comments ? post.comments.length : 0}
+                    </span>
+                  </div>
+
                   {/* 查看留言按鈕 */}
                   <button
                     onClick={() => setExpandedComments(prev => ({ ...prev, [post._id]: !prev[post._id] }))}
@@ -1331,6 +1480,52 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     {lightboxPost.content}
                   </p>
                 )}
+
+                {/* 詳情區底部按讚資訊 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginTop: '16px',
+                  paddingTop: '12px',
+                  borderTop: `1px solid ${currentTheme.border}`,
+                }}>
+                  <button
+                    onClick={() => handleLikeToggle(lightboxPost._id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                      transition: 'all 0.2s',
+                      color: hasLiked(lightboxPost) ? '#ef4444' : (theme === 'dark' ? '#c8b89a' : '#5c4a3a'),
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.transform = 'scale(1.08)';
+                      e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+                    }}
+                  >
+                    <span style={{ 
+                      fontSize: '1.1rem',
+                      transition: 'transform 0.15s ease',
+                      display: 'inline-block',
+                    }}>
+                      {hasLiked(lightboxPost) ? '❤️' : '🤍'}
+                    </span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>
+                      {lightboxPost.likes ? lightboxPost.likes.length : 0} {t('likeCount')}
+                    </span>
+                  </button>
+                </div>
               </div>
 
               {/* 右側中間：留言列表 (可滾動) */}

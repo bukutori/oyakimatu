@@ -259,6 +259,24 @@ const TRANSLATIONS = {
     footerStatusSynced: '全球同步中',
     footerCopyright: '繪師驛站',
 
+    // 通知系統
+    notifications: '通知',
+    markAllRead: '全部已讀',
+    noNotifications: '目前沒有通知',
+    notifApply: '📬 新的明信片審核申請',
+    notifApproved: '✅ 明信片已通過審核',
+    notifComment: '💬 新留言通知',
+    justNow: '剛剛',
+    minutesAgo: '分前',
+    hoursAgo: '小時前',
+    daysAgo: '天前',
+
+    // 按讚功能
+    like: '按讚',
+    unlike: '取消按讚',
+    likeCount: '個讚',
+    alertLoginRequiredLike: '請先登入才能按讚 🔐',
+
   },
 
   JP: {
@@ -513,6 +531,24 @@ const TRANSLATIONS = {
     footerStatusDesc: 'クラウドデータベース（MongoDB）に正常に接続されました。メッセージボードであなたの足跡を残しましょう！',
     footerStatusSynced: '同期中',
     footerCopyright: '絵師駅',
+
+    // 通知システム
+    notifications: '通知',
+    markAllRead: 'すべて既読',
+    noNotifications: '現在通知はありません',
+    notifApply: '📬 新しい絵葉書の承認申請',
+    notifApproved: '✅ 絵葉書が承認されました',
+    notifComment: '💬 新しいコメント',
+    justNow: 'たった今',
+    minutesAgo: '分前',
+    hoursAgo: '時間前',
+    daysAgo: '日前',
+
+    // いいね機能
+    like: 'いいね',
+    unlike: 'いいね取消',
+    likeCount: 'いいね',
+    alertLoginRequiredLike: 'いいねするにはログインしてください 🔐',
 
   },
 

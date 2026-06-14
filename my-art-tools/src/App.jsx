@@ -692,6 +692,143 @@ function App() {
 
   }, [isMobileMenuOpen]);
 
+  // ── 8. 通知系統狀態 ────────────────────────────────────
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [showNotifPanel, setShowNotifPanel] = useState(false);
+  const notifPanelRef = useRef(null);
+
+  const formatTimeAgo = (dateStr) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return t('justNow');
+    if (diffMins < 60) return `${diffMins} ${t('minutesAgo')}`;
+    if (diffHours < 24) return `${diffHours} ${t('hoursAgo')}`;
+    return `${diffDays} ${t('daysAgo')}`;
+  };
+
+  const fetchUnreadNotifCount = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_BASE}/notifications/unread-count`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUnreadNotifCount(data.count);
+      }
+    } catch (err) {
+      console.error('[fetchUnreadNotifCount] 錯誤:', err);
+    }
+  }, [token]);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_BASE}/notifications`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setNotifications(data.notifications);
+        const unread = data.notifications.filter(n => !n.isRead).length;
+        setUnreadNotifCount(unread);
+      }
+    } catch (err) {
+      console.error('[fetchNotifications] 錯誤:', err);
+    }
+  }, [token]);
+
+  const goToNotificationTarget = (notif) => {
+    setActiveView('station');
+    setShowNotifPanel(false);
+    if (notif.type === 'apply' && user && user.role === 'admin') {
+      window.__stationWallInitialTab = 'pending';
+      window.dispatchEvent(new CustomEvent('switch-station-tab', { detail: 'pending' }));
+    } else {
+      window.__stationWallInitialTab = 'public';
+      window.dispatchEvent(new CustomEvent('switch-station-tab', { detail: 'public' }));
+    }
+  };
+
+  const handleNotificationClick = async (notif) => {
+    if (notif.isRead) {
+      goToNotificationTarget(notif);
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE}/notifications/${notif._id}/read`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setNotifications(prev =>
+          prev.map(n => n._id === notif._id ? { ...n, isRead: true } : n)
+        );
+        setUnreadNotifCount(prev => Math.max(0, prev - 1));
+        goToNotificationTarget(notif);
+      }
+    } catch (err) {
+      console.error('[handleNotificationClick] 錯誤:', err);
+      goToNotificationTarget(notif);
+    }
+  };
+
+  const markAllNotificationsAsRead = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/notifications/read-all`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        setUnreadNotifCount(0);
+      }
+    } catch (err) {
+      console.error('[markAllNotificationsAsRead] 錯誤:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!token) {
+      setUnreadNotifCount(0);
+      setNotifications([]);
+      return;
+    }
+    fetchUnreadNotifCount();
+    const interval = setInterval(() => {
+      fetchUnreadNotifCount();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [token, fetchUnreadNotifCount]);
+
+  useEffect(() => {
+    if (showNotifPanel) {
+      fetchNotifications();
+    }
+  }, [showNotifPanel, fetchNotifications]);
+
+  useEffect(() => {
+    const handleClickOutsideNotif = (e) => {
+      const btn = document.getElementById('notif-btn');
+      if (notifPanelRef.current && !notifPanelRef.current.contains(e.target) && (!btn || !btn.contains(e.target))) {
+        setShowNotifPanel(false);
+      }
+    };
+    if (showNotifPanel) {
+      document.addEventListener('mousedown', handleClickOutsideNotif);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutsideNotif);
+  }, [showNotifPanel]);
+
+
 
 
   // ──────────────────────────────────────────────────────
@@ -934,6 +1071,23 @@ function App() {
 
 
 
+      <style>{`
+        @keyframes pulseNotif {
+          0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+          }
+          70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
+          }
+          100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+          }
+        }
+      `}</style>
+
       {/* ═══════════════════════════════════════════════════
            頂部導覽列 — 毛玻璃 + RWD 漢堡選單
       ═══════════════════════════════════════════════════ */}
@@ -1164,38 +1318,200 @@ function App() {
             </button>
 
 
-            {/* 設定按鈕（登入後） */}
+            {/* 設定與通知按鈕（登入後） */}
             {user && (
-              <button
-                id="settings-btn"
-                onClick={() => setShowSettingsModal(true)}
-                title={t('settings')}
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)',
-                  color: currentTheme.text,
-                  fontSize: '1.1rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.12)';
-                  e.currentTarget.style.transform = 'rotate(45deg) scale(1.08)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)';
-                  e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
-                }}
-              >
-                ⚙️
-              </button>
+              <>
+                {/* 通知鈴鐺按鈕 */}
+                <div style={{ position: 'relative' }} ref={notifPanelRef}>
+                  <button
+                    id="notif-btn"
+                    onClick={() => setShowNotifPanel(prev => !prev)}
+                    title={t('notifications')}
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)',
+                      color: currentTheme.text,
+                      fontSize: '1.1rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      position: 'relative',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.12)';
+                      e.currentTarget.style.transform = 'scale(1.08)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                  >
+                    🔔
+                    {unreadNotifCount > 0 && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: '#ef4444',
+                          boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.4)',
+                          animation: 'pulseNotif 1.5s infinite',
+                        }}
+                      />
+                    )}
+                  </button>
+
+                  {/* 下拉通知面板 */}
+                  {showNotifPanel && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '46px',
+                        right: '0',
+                        width: '320px',
+                        maxHeight: '400px',
+                        overflowY: 'auto',
+                        borderRadius: '12px',
+                        background: isLight ? 'rgba(255, 255, 255, 0.95)' : 'rgba(20, 20, 25, 0.95)',
+                        backdropFilter: 'blur(16px)',
+                        border: isLight ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: isLight ? '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)' : '0 10px 25px -5px rgba(0,0,0,0.5), 0 8px 10px -6px rgba(0,0,0,0.5)',
+                        zIndex: 1100,
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
+                    >
+                      {/* 面板頭部 */}
+                      <div
+                        style={{
+                          padding: '10px 14px',
+                          borderBottom: isLight ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.08)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <span style={{ fontSize: '0.85rem', fontWeight: '700', color: currentTheme.text }}>
+                          {t('notifications')} ({unreadNotifCount})
+                        </span>
+                        {unreadNotifCount > 0 && (
+                          <button
+                            onClick={markAllNotificationsAsRead}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: isLight ? '#3b82f6' : '#fb7185',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              transition: 'background 0.2s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = isLight ? 'rgba(59,130,246,0.1)' : 'rgba(251,113,133,0.1)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                          >
+                            {t('markAllRead')}
+                          </button>
+                        )}
+                      </div>
+
+                      {/* 通知列表 */}
+                      <div style={{ flex: 1, overflowY: 'auto' }}>
+                        {notifications.length === 0 ? (
+                          <div
+                            style={{
+                              padding: '30px 20px',
+                              textAlign: 'center',
+                              color: isLight ? '#94a3b8' : '#475569',
+                              fontSize: '0.82rem',
+                            }}
+                          >
+                            {t('noNotifications')}
+                          </div>
+                        ) : (
+                          notifications.map(notif => (
+                            <div
+                              key={notif._id}
+                              onClick={() => handleNotificationClick(notif)}
+                              style={{
+                                padding: '12px 14px',
+                                borderBottom: isLight ? '1px solid rgba(0,0,0,0.05)' : '1px solid rgba(255,255,255,0.05)',
+                                cursor: 'pointer',
+                                background: notif.isRead 
+                                  ? 'transparent' 
+                                  : (isLight ? 'rgba(59,130,246,0.05)' : 'rgba(251,113,133,0.05)'),
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px',
+                                transition: 'background 0.2s',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)'}
+                              onMouseLeave={e => e.currentTarget.style.background = notif.isRead 
+                                ? 'transparent' 
+                                : (isLight ? 'rgba(59,130,246,0.05)' : 'rgba(251,113,133,0.05)')}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                <span style={{ fontSize: '1rem', flexShrink: 0 }}>
+                                  {notif.type === 'apply' && '📬'}
+                                  {notif.type === 'approved' && '✅'}
+                                  {notif.type === 'comment' && '💬'}
+                                </span>
+                                <div style={{ flex: 1, fontSize: '0.78rem', color: currentTheme.text, lineHeight: '1.4', textAlign: 'left' }}>
+                                  <strong>{notif.senderName}</strong> {notif.message.replace(notif.senderName, '').trim()}
+                                </div>
+                              </div>
+                              <span style={{ fontSize: '0.68rem', color: isLight ? '#94a3b8' : '#475569', alignSelf: 'flex-end' }}>
+                                {formatTimeAgo(notif.createdAt)}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  id="settings-btn"
+                  onClick={() => setShowSettingsModal(true)}
+                  title={t('settings')}
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)',
+                    color: currentTheme.text,
+                    fontSize: '1.1rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.12)';
+                    e.currentTarget.style.transform = 'rotate(45deg) scale(1.08)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)';
+                    e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
+                  }}
+                >
+                  ⚙️
+                </button>
+              </>
             )}
 
 
@@ -1479,6 +1795,52 @@ function App() {
                 {currentTime.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' })}
               </span>
             </div>
+
+            {/* 用戶通知（手機版） */}
+            {user && (
+              <div style={{
+                animation: 'fadeInUp 0.25s ease 0.18s both',
+                marginBottom: '4px',
+              }}>
+                <button
+                  onClick={() => {
+                    setActiveView('station');
+                    setShowNotifPanel(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
+                    border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)',
+                    color: currentTheme.text,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1.1rem' }}>🔔</span>
+                    <span style={{ fontSize: '0.88rem', fontWeight: '600' }}>{t('notifications')}</span>
+                  </div>
+                  {unreadNotifCount > 0 && (
+                    <span style={{
+                      background: '#ef4444',
+                      color: '#fff',
+                      fontSize: '0.72rem',
+                      fontWeight: '800',
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                    }}>
+                      {unreadNotifCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
 
             {/* 用戶區（手機版） */}
             {user ? (

@@ -151,7 +151,10 @@ function App() {
 
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  const [language, setLanguage] = useState('zh'); // 'zh' or 'JP'
+  const [language, setLanguage] = useState(() => {
+    const saved = localStorage.getItem('my-art-tools-language');
+    return saved || 'zh';
+  });
 
 
 
@@ -252,6 +255,8 @@ function App() {
   const handleLanguageChange = (newLanguage) => {
 
     setLanguage(newLanguage);
+
+    localStorage.setItem('my-art-tools-language', newLanguage);
 
     saveLanguagePreference(newLanguage);
 
@@ -572,6 +577,7 @@ function App() {
     // 重置所有狀態到預設值
     setSavedImages([]);
     setLanguage('zh');
+    localStorage.setItem('my-art-tools-language', 'zh');
     setIsDarkMode(false);
     setAutoTimeMode(false);
 

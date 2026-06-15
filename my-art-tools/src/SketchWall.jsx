@@ -4,23 +4,28 @@ import TRANSLATIONS from './translations';
 
 // Theme colors
 const THEMES = {
-  dark: {
-    background: '#0f0f0f',
-    text: '#e0e0e0',
-    cardBg: '#1a1a1a',
-    border: 'rgba(255,255,255,0.07)',
-  },
-  light: {
-    background: '#f5f5f5',
-    text: '#111111',
-    cardBg: '#ffffff',
-    border: 'rgba(0,0,0,0.08)',
-  },
+    dark: {
+        background: '#0f0f0f',
+        text: '#e0e0e0',
+        cardBg: '#1a1a1a',
+        border: 'rgba(255,255,255,0.07)',
+    },
+    light: {
+        background: '#f5f5f5',
+        text: '#111111',
+        cardBg: '#ffffff',
+        border: 'rgba(0,0,0,0.08)',
+    },
 };
 
 // Helper functions defined outside the component to preserve React purity
 const getRandomPage = () => Math.floor(Math.random() * 80) + 1;
 const getRandomIndex = (length) => Math.floor(Math.random() * length);
+const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
 
 function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language = 'zh' }) {
     const currentTheme = THEMES[theme] || THEMES.dark;
@@ -37,6 +42,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
     const [fitMode, setFitMode] = useState('contain'); // 'contain' or 'cover'
     const [hoveredEl, setHoveredEl] = useState(null);
     const [showImageModal, setShowImageModal] = useState(false);
+    const [customMinutes, setCustomMinutes] = useState('');
     const [customSeconds, setCustomSeconds] = useState('');
     const [isCustomDuration, setIsCustomDuration] = useState(false);
 
@@ -196,11 +202,14 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
 
     // Handle custom duration input
     const handleCustomDurationSubmit = () => {
-        const secs = parseInt(customSeconds);
-        if (secs && secs > 0 && secs <= 3600) {
-            setDuration(secs);
-            setTimeLeft(secs);
+        const mins = parseInt(customMinutes) || 0;
+        const secs = parseInt(customSeconds) || 0;
+        const totalSecs = mins * 60 + secs;
+        if (totalSecs > 0) {
+            setDuration(totalSecs);
+            setTimeLeft(totalSecs);
             setIsCustomDuration(true);
+            setCustomMinutes('');
             setCustomSeconds('');
         }
     };
@@ -280,7 +289,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
         display: 'flex',
         backgroundColor: currentTheme.cardBg,
         padding: '4px',
-        borderRadius: '10px',
+        borderRadius: '12px',
         border: `1px solid ${currentTheme.border}`,
     };
 
@@ -289,17 +298,22 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
         const isHovered = hoveredEl === `mode-${mode}`;
         return {
             flex: 1,
-            padding: '8px 0',
+            padding: '10px 16px',
             border: 'none',
             borderRadius: '8px',
             backgroundColor: isActiveMode ? (isLight ? 'rgba(59, 130, 246, 0.15)' : 'rgba(251, 113, 133, 0.2)') : 'transparent',
             color: isActiveMode ? (isLight ? '#3b82f6' : '#fb7185') : (isHovered ? currentTheme.text : (isLight ? '#6b7280' : '#8c8c8c')),
-            fontWeight: 'bold',
-            fontSize: '0.88rem',
+            fontWeight: '600',
+            fontSize: '0.95rem',
             cursor: 'pointer',
-            transition: 'all 0.2s',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             textAlign: 'center',
             outline: 'none',
+            boxShadow: isActiveMode ? (isLight ? '0 2px 8px rgba(0, 0, 0, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.5)') : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
         };
     };
 
@@ -346,19 +360,17 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
         const isSelected = duration === secs;
         const isHovered = hoveredEl === `dur-${secs}`;
         return {
-            padding: '6px 12px',
+            padding: '8px 16px',
             borderRadius: '8px',
-            border: isSelected ? 'none' : `1px solid ${currentTheme.border}`,
-            backgroundColor: isSelected
-                ? (isLight ? '#3b82f6' : '#fb7185')
-                : (isHovered ? currentTheme.cardBg : currentTheme.cardBg),
-            color: isSelected ? '#ffffff' : (isHovered ? currentTheme.text : (isLight ? '#6b7280' : '#8c8c8c')),
-            fontWeight: 'bold',
-            fontSize: '0.85rem',
+            border: 'none',
+            backgroundColor: isSelected ? (isLight ? 'rgba(59, 130, 246, 0.15)' : 'rgba(251, 113, 133, 0.2)') : 'transparent',
+            color: isSelected ? (isLight ? '#3b82f6' : '#fb7185') : (isHovered ? currentTheme.text : (isLight ? '#6b7280' : '#8c8c8c')),
+            fontWeight: '600',
+            fontSize: '0.88rem',
             cursor: 'pointer',
-            transition: 'all 0.2s ease',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             outline: 'none',
-            boxShadow: isSelected ? (isLight ? '0 4px 12px rgba(59, 130, 246, 0.3)' : '0 4px 12px rgba(251, 113, 133, 0.3)') : 'none',
+            boxShadow: isSelected ? (isLight ? '0 2px 8px rgba(0, 0, 0, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.5)') : 'none',
         };
     };
 
@@ -499,17 +511,16 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                 >
                     ⏱️ 3 {t('minutesSketch')}
                 </button>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <input
                         type="number"
-                        value={customSeconds}
-                        onChange={(e) => setCustomSeconds(e.target.value)}
-                        placeholder={t('customSeconds')}
-                        min="1"
-                        max="3600"
+                        value={customMinutes}
+                        onChange={(e) => setCustomMinutes(e.target.value)}
+                        placeholder="0"
+                        min="0"
                         style={{
-                            width: '80px',
-                            padding: '6px 10px',
+                            width: '45px',
+                            padding: '6px 6px',
                             borderRadius: '8px',
                             border: `1px solid ${currentTheme.border}`,
                             backgroundColor: currentTheme.cardBg,
@@ -521,22 +532,42 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                         onFocus={e => e.currentTarget.style.borderColor = isLight ? '#3b82f6' : '#fb7185'}
                         onBlur={e => e.currentTarget.style.borderColor = currentTheme.border}
                     />
+                    <span style={{ fontSize: '0.85rem', color: isLight ? '#6b7280' : '#8c8c8c' }}>{t('minutesUnit')}</span>
+                    <input
+                        type="number"
+                        value={customSeconds}
+                        onChange={(e) => setCustomSeconds(e.target.value)}
+                        placeholder="0"
+                        min="0"
+                        style={{
+                            width: '45px',
+                            padding: '6px 6px',
+                            borderRadius: '8px',
+                            border: `1px solid ${currentTheme.border}`,
+                            backgroundColor: currentTheme.cardBg,
+                            color: currentTheme.text,
+                            fontSize: '0.85rem',
+                            outline: 'none',
+                            textAlign: 'center',
+                        }}
+                        onFocus={e => e.currentTarget.style.borderColor = isLight ? '#3b82f6' : '#fb7185'}
+                        onBlur={e => e.currentTarget.style.borderColor = currentTheme.border}
+                    />
+                    <span style={{ fontSize: '0.85rem', color: isLight ? '#6b7280' : '#8c8c8c' }}>{t('secondsUnit')}</span>
                     <button
                         onClick={handleCustomDurationSubmit}
                         style={{
-                            padding: '6px 12px',
+                            padding: '8px 16px',
                             borderRadius: '8px',
-                            border: isCustomDuration ? 'none' : `1px solid ${currentTheme.border}`,
-                            backgroundColor: isCustomDuration
-                                ? (isLight ? '#3b82f6' : '#fb7185')
-                                : (hoveredEl === 'dur-custom' ? currentTheme.cardBg : currentTheme.cardBg),
-                            color: isCustomDuration ? '#ffffff' : (hoveredEl === 'dur-custom' ? currentTheme.text : (isLight ? '#6b7280' : '#8c8c8c')),
-                            fontWeight: 'bold',
-                            fontSize: '0.85rem',
+                            border: 'none',
+                            backgroundColor: isCustomDuration ? (isLight ? 'rgba(59, 130, 246, 0.15)' : 'rgba(251, 113, 133, 0.2)') : 'transparent',
+                            color: isCustomDuration ? (isLight ? '#3b82f6' : '#fb7185') : (hoveredEl === 'dur-custom' ? currentTheme.text : (isLight ? '#6b7280' : '#8c8c8c')),
+                            fontWeight: '600',
+                            fontSize: '0.88rem',
                             cursor: 'pointer',
-                            transition: 'all 0.2s ease',
+                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                             outline: 'none',
-                            boxShadow: isCustomDuration ? (isLight ? '0 4px 12px rgba(59, 130, 246, 0.3)' : '0 4px 12px rgba(251, 113, 133, 0.3)') : 'none',
+                            boxShadow: isCustomDuration ? (isLight ? '0 2px 8px rgba(0, 0, 0, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.5)') : 'none',
                         }}
                         onMouseEnter={() => setHoveredEl('dur-custom')}
                         onMouseLeave={() => setHoveredEl(null)}
@@ -549,7 +580,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
             {/* Glowing Timer Display */}
             <div style={timerAreaStyle}>
                 <span style={timerNumStyle}>
-                    {timeLeft} <span style={{ fontSize: '1rem', color: isLight ? '#6b7280' : '#666' }}>S</span>
+                    {formatTime(timeLeft)}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: isLight ? '#6b7280' : '#888', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
                     {isActive ? '⏳ ' + t('timing') : '⏸️ ' + t('paused')}

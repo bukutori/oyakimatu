@@ -5,9 +5,12 @@
 
 import { useState, useEffect } from 'react';
 
+import TRANSLATIONS from './translations';
+
 const API_BASE = `${import.meta.env.VITE_API_URL}/api`;
 
-function AdminPanel({ token, theme = 'dark', onClose }) {
+function AdminPanel({ token, theme = 'dark', language = 'zh', onClose }) {
+  const t = (key) => TRANSLATIONS[language][key] || key;
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'messages'
@@ -21,7 +24,6 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
     setMounted(true);
   }, []);
 
-  // 載入所有用戶
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_BASE}/admin/users`, {
@@ -31,11 +33,11 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
       if (data.success) {
         setUsers(data.users);
       } else {
-        setError(data.message || '載入用戶失敗');
+        setError(data.message || t('fetchUsersFailed'));
       }
     } catch (err) {
       console.error('Fetch users error:', err);
-      setError('網路錯誤: ' + err.message);
+      setError(t('networkError') + err.message);
     }
   };
 
@@ -68,17 +70,17 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
       if (data.success) {
         fetchUsers(); // 重新載入用戶列表
       } else {
-        setError(data.message || '修改角色失敗');
+        setError(data.message || t('changeRoleFailed'));
       }
     } catch (err) {
       console.error('Role change error:', err);
-      setError('網路錯誤: ' + err.message);
+      setError(t('networkError') + err.message);
     }
   };
 
   // 刪除留言
   const handleDeleteMessage = async (messageId) => {
-    if (!confirm('確定要刪除這則留言嗎？')) return;
+    if (!confirm(t('confirmDeleteMessage'))) return;
 
     try {
       const response = await fetch(`${API_BASE}/admin/messages/${messageId}`, {
@@ -89,11 +91,11 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
       if (data.success) {
         fetchMessages(); // 重新載入留言列表
       } else {
-        setError(data.message || '刪除留言失敗');
+        setError(data.message || t('deleteMessageFailed'));
       }
     } catch (err) {
       console.error('Delete message error:', err);
-      setError('網路錯誤: ' + err.message);
+      setError(t('networkError') + err.message);
     }
   };
 
@@ -129,7 +131,7 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
         alignItems: 'center',
         marginBottom: '20px'
       }}>
-        <h2 style={{ margin: 0 }}>管理員面板</h2>
+        <h2 style={{ margin: 0 }}>{t('adminPanel')}</h2>
         {onClose && (
           <button
             onClick={onClose}
@@ -159,8 +161,8 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
           backgroundColor: isDark ? '#333' : '#e0e0e0',
           borderRadius: '8px'
         }}>
-          <h3>❌ 未提供認證 Token</h3>
-          <p>請先登入</p>
+          <h3>{t('noToken')}</h3>
+          <p>{t('pleaseLogin')}</p>
         </div>
       )}
 
@@ -194,7 +196,7 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
               cursor: 'pointer'
             }}
           >
-            👥 用戶管理
+            {t('userManagement')}
           </button>
           <button
             onClick={() => setActiveTab('messages')}
@@ -207,7 +209,7 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
               cursor: 'pointer'
             }}
           >
-            💬 留言管理
+            {t('messageManagement')}
           </button>
         </div>
       )}
@@ -225,12 +227,12 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
       )}
 
       {!token ? null : loading ? (
-        <div>載入中...</div>
+        <div>{t('loadingMore')}</div>
       ) : (
         <>
           {activeTab === 'users' ? (
             <div>
-              <h3 style={{ marginBottom: '15px' }}>所有用戶 ({users.length})</h3>
+              <h3 style={{ marginBottom: '15px' }}>{t('allUsers')} ({users.length})</h3>
               <div style={{
                 backgroundColor: isDark ? '#2a2a3e' : '#fff',
                 borderRadius: '12px',
@@ -243,12 +245,12 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
                       backgroundColor: isDark ? '#3a3a4e' : '#f0f0f0',
                       borderBottom: `2px solid ${isDark ? '#444' : '#ddd'}`
                     }}>
-                      <th style={{ padding: '12px', textAlign: 'left' }}>用戶名稱</th>
-                      <th style={{ padding: '12px', textAlign: 'left' }}>顯示名稱</th>
-                      <th style={{ padding: '12px', textAlign: 'left' }}>Email</th>
-                      <th style={{ padding: '12px', textAlign: 'left' }}>角色</th>
-                      <th style={{ padding: '12px', textAlign: 'left' }}>語言</th>
-                      <th style={{ padding: '12px', textAlign: 'left' }}>建立時間</th>
+                      <th style={{ padding: '12px', textAlign: 'left' }}>{t('username')}</th>
+                      <th style={{ padding: '12px', textAlign: 'left' }}>{t('displayName')}</th>
+                      <th style={{ padding: '12px', textAlign: 'left' }}>{t('email')}</th>
+                      <th style={{ padding: '12px', textAlign: 'left' }}>{t('role')}</th>
+                      <th style={{ padding: '12px', textAlign: 'left' }}>{t('language')}</th>
+                      <th style={{ padding: '12px', textAlign: 'left' }}>{t('createdAt')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -271,13 +273,13 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
                               color: isDark ? '#fff' : '#333'
                             }}
                           >
-                            <option value="user">一般用戶</option>
-                            <option value="admin">管理員</option>
+                            <option value="user">{t('userRole')}</option>
+                            <option value="admin">{t('adminRole')}</option>
                           </select>
                         </td>
                         <td style={{ padding: '12px' }}>{user.language}</td>
                         <td style={{ padding: '12px' }}>
-                          {new Date(user.createdAt).toLocaleString('zh-TW')}
+                          {new Date(user.createdAt).toLocaleString(language === 'zh' ? 'zh-TW' : (language === 'JP' ? 'ja-JP' : 'en-US'))}
                         </td>
                       </tr>
                     ))}
@@ -287,7 +289,7 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
             </div>
           ) : (
             <div>
-              <h3 style={{ marginBottom: '15px' }}>所有留言 ({messages.length})</h3>
+              <h3 style={{ marginBottom: '15px' }}>{t('allMessages')} ({messages.length})</h3>
               <div style={{
                 backgroundColor: isDark ? '#2a2a3e' : '#fff',
                 borderRadius: '12px',
@@ -296,7 +298,7 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
               }}>
                 {messages.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '40px' }}>
-                    尚無留言
+                    {t('noMessages')}
                   </div>
                 ) : (
                   messages.map(message => (
@@ -310,7 +312,7 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                         <strong>{message.artistNickname}</strong>
                         <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>
-                          {new Date(message.createdAt).toLocaleString('zh-TW')}
+                          {new Date(message.createdAt).toLocaleString(language === 'zh' ? 'zh-TW' : (language === 'JP' ? 'ja-JP' : 'en-US'))}
                         </span>
                       </div>
                       <p style={{ marginBottom: '10px' }}>{message.content}</p>
@@ -326,7 +328,7 @@ function AdminPanel({ token, theme = 'dark', onClose }) {
                           fontSize: '0.85rem'
                         }}
                       >
-                        刪除
+                        {t('deleteBtn')}
                       </button>
                     </div>
                   ))

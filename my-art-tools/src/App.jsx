@@ -1011,7 +1011,7 @@ function App() {
 
       case 'admin':
 
-        return <AdminPanel token={token} theme={isDarkMode ? 'dark' : 'light'} onClose={() => setActiveView('explore')} />;
+        return <AdminPanel token={token} theme={isDarkMode ? 'dark' : 'light'} language={language} onClose={() => setActiveView('explore')} />;
 
 
 
@@ -1468,7 +1468,21 @@ function App() {
                                   {notif.type === 'like' && '❤️'}
                                 </span>
                                 <div style={{ flex: 1, fontSize: '0.78rem', color: currentTheme.text, lineHeight: '1.4', textAlign: 'left' }}>
-                                  <strong>{notif.senderName}</strong> {notif.message.replace(notif.senderName, '').trim()}
+                                  {notif.type === 'apply' && (
+                                    <><strong>{notif.senderName}</strong> {t('notifApplyDetail')}</>
+                                  )}
+                                  {notif.type === 'approved' && (
+                                    <>{t('notifApprovedDetail')}</>
+                                  )}
+                                  {notif.type === 'comment' && (
+                                    <><strong>{notif.senderName}</strong> {t('notifCommentDetail')}</>
+                                  )}
+                                  {notif.type === 'like' && (
+                                    <><strong>{notif.senderName}</strong> {t('notifLikeDetail')}</>
+                                  )}
+                                  {!['apply', 'approved', 'comment', 'like'].includes(notif.type) && (
+                                    <><strong>{notif.senderName}</strong> {notif.message.replace(notif.senderName, '').trim()}</>
+                                  )}
                                 </div>
                               </div>
                               <span style={{ fontSize: '0.68rem', color: isLight ? '#94a3b8' : '#475569', alignSelf: 'flex-end' }}>
@@ -2180,6 +2194,8 @@ function App() {
 
                 <option value="JP">日本語</option>
 
+                <option value="en">English</option>
+
               </select>
 
             </div>
@@ -2358,7 +2374,7 @@ function App() {
 
                 }}>
 
-                   管理員功能
+                   {t('adminFeatures')}
 
                 </div>
 
@@ -2402,7 +2418,7 @@ function App() {
 
                 >
 
-                  開啟管理員面板
+                  {t('openAdminPanel')}
 
                 </button>
 

@@ -277,6 +277,41 @@ const TRANSLATIONS = {
     likeCount: '個讚',
     alertLoginRequiredLike: '請先登入才能按讚 🔐',
 
+    // 管理員設定與面板
+    adminFeatures: '管理員功能',
+    openAdminPanel: '開啟管理員面板',
+    adminPanel: '管理員面板',
+    noToken: '❌ 未提供認證 Token',
+    pleaseLogin: '請先登入',
+    userManagement: '👥 用戶管理',
+    messageManagement: '💬 留言管理',
+    allUsers: '所有用戶',
+    allMessages: '所有留言',
+    username: '用戶名稱',
+    displayName: '顯示名稱',
+    email: 'Email',
+    role: '角色',
+    userRole: '一般用戶',
+    adminRole: '管理員',
+    createdAt: '建立時間',
+    noMessages: '尚無留言',
+    deleteBtn: '刪除',
+    confirmDeleteMessage: '確定要刪除這則留言嗎？',
+    fetchUsersFailed: '載入用戶失敗',
+    networkError: '網路錯誤: ',
+    changeRoleFailed: '修改角色失敗',
+    deleteMessageFailed: '刪除留言失敗',
+
+    // 通知細節
+    notifApplyDetail: '發布了一張新明信片，等待審核',
+    notifApprovedDetail: '你的明信片已通過審核，已在驛站牆上展示！',
+    notifCommentDetail: '在你的明信片上留了言',
+    notifLikeDetail: '喜歡你的明信片',
+
+    // 時間單位
+    minutesUnit: '分',
+    secondsUnit: '秒',
+
   },
 
   JP: {
@@ -549,6 +584,349 @@ const TRANSLATIONS = {
     unlike: 'いいね取消',
     likeCount: 'いいね',
     alertLoginRequiredLike: 'いいねするにはログインしてください 🔐',
+
+    // 管理者設定とパネル
+    adminFeatures: '管理者機能',
+    openAdminPanel: '管理者パネルを開く',
+    adminPanel: '管理者パネル',
+    noToken: '❌ トークンが提供されていません',
+    pleaseLogin: 'ログインしてください',
+    userManagement: '👥 ユーザー管理',
+    messageManagement: '💬 コメント管理',
+    allUsers: 'すべてのユーザー',
+    allMessages: 'すべてのコメント',
+    username: 'ユーザー名',
+    displayName: '表示名',
+    email: 'メールアドレス',
+    role: 'ロール',
+    userRole: '一般ユーザー',
+    adminRole: '管理者',
+    createdAt: '作成日時',
+    noMessages: 'コメントはまだありません',
+    deleteBtn: '削除',
+    confirmDeleteMessage: 'このコメントを削除してもよろしいですか？',
+    fetchUsersFailed: 'ユーザーの読み込みに失敗しました',
+    networkError: 'ネットワークエラー: ',
+    changeRoleFailed: 'ロールの変更に失敗しました',
+    deleteMessageFailed: 'コメントの削除に失敗しました',
+
+    // 通知詳細
+    notifApplyDetail: 'が新しい絵葉書を投稿しました。承認待ちです',
+    notifApprovedDetail: 'あなたの絵葉書が承認され、掲示板に表示されました！',
+    notifCommentDetail: 'があなたの絵葉書にコメントしました',
+    notifLikeDetail: 'があなたの絵葉書にいいねしました',
+
+    // 時間単位
+    minutesUnit: '分',
+    secondsUnit: '秒',
+
+  },
+
+  en: {
+
+    // 導覽列與設定
+
+    settings: 'Settings',
+
+    timeAwareBackground: 'Time-Aware Background',
+
+    timeAwareBackgroundDesc: 'Automatically toggle day/night mode based on time',
+
+    timeRules: 'Time Rules:',
+
+    dayMode: 'Day Mode: 06:00 - 18:00 (Light Background)',
+
+    nightMode: 'Night Mode: 18:00 - 06:00 (Dark Background)',
+
+    note: 'Note:',
+
+    autoModeNote: 'When enabled, manual dark mode toggle is disabled.',
+
+    language: 'Language',
+
+    login: 'Log In',
+
+    register: 'Register',
+
+    logout: 'Log Out',
+
+    explore: 'Explore Inspiration',
+
+    favorites: 'My Favorites',
+
+    sketch: 'Sketch Practice',
+
+    inspiration: 'Inspiration Draw',
+
+    palette: 'Color Palette',
+
+    station: 'Message Board',
+
+    admin: 'Admin',
+
+    mySite: 'My Site',
+
+    autoTimeModeEnabled: 'Auto-time mode enabled',
+
+    toggleDarkMode: 'Toggle Dark/Light Mode',
+
+    // 速寫計時牆
+
+    sketchTimerWall: 'Sketch Timer',
+
+    randomGallery: 'Random Gallery',
+
+    customImages: 'Custom Images',
+
+    secondsSketch: 'Seconds Sketch',
+
+    minutesSketch: 'Minutes Sketch',
+
+    customSeconds: 'Custom Seconds',
+
+    set: 'Set',
+
+    timing: 'Timing',
+
+    paused: 'Paused',
+
+    noCustomImages: 'No custom images loaded',
+
+    uploadOrPaste: 'Upload local images or paste URL below',
+
+    canvasPreparing: 'Preparing canvas...',
+
+    loadImageError: 'Failed to load reference image, please retry.',
+
+    retry: 'Retry',
+
+    toggleFitMode: 'Toggle crop-fill or full display',
+
+    fill: 'Fill',
+
+    full: 'Full',
+
+    unfavorite: 'Remove Favorite',
+
+    favorite: 'Add to Favorites',
+
+    customReference: '📁 Custom Reference:',
+
+    referenceSource: '👤 Reference Source:',
+
+    selectLocalImages: 'Select local images (supports multiple selection for batch practice)',
+
+    orEnterUrl: 'Or enter online image URL...',
+
+    load: 'Load',
+
+    pause: 'Pause',
+
+    continue: 'Continue',
+
+    reset: 'Reset',
+
+    nextImage: 'Next Image (Skip)',
+
+    clickToClose: 'Click background or ✕ to close',
+
+    // 主題調色盤
+
+    themePalette: 'Theme Palette',
+
+    clickToCopy: 'Click a color bar to copy its hex code',
+
+    clickToChange: 'Click button again to get a new color scheme',
+
+    harmoniousPalette: 'Harmonious Palette',
+
+    randomPalette: 'Random Palette',
+
+    colorCopied: 'Copied code:',
+
+    // 靈感抽籤機
+
+    inspirationLottery: 'Inspiration Draw',
+
+    textChallenge: 'Text Challenge',
+
+    imageChallenge: 'Image Challenge',
+
+    randomDrawingChallenge: '🎲 Random Drawing Challenge',
+
+    capturingMood: '🔮 Capturing vibe...',
+
+    moodResonance: 'Vibe resonance:',
+
+    clickToSummon: 'Click the button below to summon drawing inspiration!',
+
+    inspirationTransferring: 'Transferring inspiration...',
+
+    clickToEnlarge: 'Click image to enlarge',
+
+    clickToDraw: 'Click button below to draw a random inspiration image!',
+
+    summonChallenge: '🎲 Summon Random Challenge',
+
+    drawingLottery: '🎰 Drawing...',
+
+    drawInspirationImage: '🌌 Draw Inspiration Image',
+
+    // 靈感圖庫
+
+    inspirationGallery: 'Inspiration Gallery',
+
+    poses: 'Action References',
+
+    landscapes: 'Fantasy Landscapes',
+
+    outfits: 'Character Outfits',
+
+    nature: 'Nature Scenes',
+
+    urban: 'Urban Buildings',
+
+    all: 'All',
+
+    pinnedCanvas: 'Pinned Reference Canvas',
+
+    multiCompare: '🔍 Compare Images',
+
+    clear: 'Clear',
+
+    loadFailed: 'Failed to load image, please check connection.',
+
+    inspirationLoading: 'Loading inspiration...',
+
+    loadingMore: 'Loading... Please wait a moment',
+
+    loadMore: 'Load More Inspiration',
+
+    cancelFavorite: 'Remove Favorite',
+
+    addFavorite: 'Add Favorite',
+
+    cancelPin: 'Unpin',
+
+    pinToCanvas: 'Pin to Canvas',
+
+    pinLimit: 'The pinned reference canvas can only hold up to 6 images!',
+
+    // 其他
+
+    copy: 'Copy',
+
+    // 時光驛站牆 & 頁尾
+    stationTitle: '🚂 Message Board',
+    stationDesc: 'Share your creative stories and exchange inspiration with other travelers',
+    tabPublic: '🌍 Travelers\' Postcards',
+    tabPending: '⏳ Pending Postcards',
+    btnOpenPostForm: '📮 Post My Postcard',
+    createPostcard: '📝 Create Your Postcard',
+    uploadImage: '📷 Upload Image',
+    uploadHint: 'Click or drag image here to upload',
+    uploadSupport: 'Supports JPG, PNG, GIF, WebP (Max 10MB)',
+    storyText: '✍️ Story Text',
+    storyPlaceholder: 'Share your story, journey notes, or quotes that touched you...',
+    btnSubmitPost: '📤 Send Postcard',
+    submitting: '⏳ Uploading...',
+    cancel: 'Cancel',
+    pendingExplain: '🔍 Below are pending postcards - images are blurred by default, hover to preview. Review carefully before approving or rejecting.',
+    myPendingCard: 'Postcard submitted, waiting for admin approval!',
+    pendingBadge: 'Pending',
+    hideComments: 'Hide Comments',
+    showComments: 'View Comments',
+    noComments: 'No comments yet. Be the first to leave one!',
+    commentPlaceholder: 'Write a comment...',
+    loginRequiredComment: 'Please log in to leave a comment',
+    send: 'Send',
+    btnApprove: '🟢 Approve',
+    approving: 'Approving...',
+    btnReject: '🔴 Reject & Delete',
+    rejecting: 'Deleting...',
+    emptyPublic: 'No postcards yet. Be the first to share!',
+    emptyPending: 'No pending postcards. All clear! ✨',
+    delete: '🗑️ Delete',
+    pendingNoComment: '⏳ Cannot comment on pending postcards',
+    alertSizeLimit: 'Image size cannot exceed 10MB',
+    alertLoginRequiredPost: 'Please log in to publish a postcard 🔐',
+    alertSelectImage: 'Please select an image',
+    alertTextRequired: 'Please enter story text',
+    alertUploadSuccess: 'Postcard submitted, waiting for admin approval!',
+    alertUploadFailed: 'Submission failed, please try again later',
+    alertNetworkFailed: 'Network connection failed, please try again later',
+    alertApproveSuccess: '✅ Postcard approved!',
+    alertApproveFailed: 'Approval failed, please try again later',
+    confirmDelete: 'Are you sure you want to permanently delete this postcard?',
+    alertDeleteSuccess: '🗑️ Postcard deleted',
+    alertDeleteFailed: 'Deletion failed, please try again later',
+    alertLoginRequiredComment: 'Please log in to leave a comment',
+    alertCommentSuccess: 'Commented successfully!',
+    alertCommentFailed: 'Comment failed',
+    alertNetworkError: 'Network error, please try again later',
+    alertTextOrImageRequired: 'Please upload an image or fill in the story text',
+    alertUploadSuccessAdmin: 'Postcard published successfully!',
+    footerAbout: 'About Painter\'s Station',
+    footerAboutDesc: 'A digital toolbox tailored for artists. Providing random drawing inspiration, curated color schemes, and sketch timing features to accompany your daily creation.',
+    footerQuickLinks: 'Quick Links',
+    footerMySite: 'My Personal Site',
+    footerStatus: 'Station Connection Status',
+    footerStatusDesc: 'Cloud database (MongoDB) connected. Welcome to the discussion board to leave your creative footprint!',
+    footerStatusSynced: 'Synchronizing globally',
+    footerCopyright: 'Painter\'s Station',
+
+    // 通知系統
+    notifications: 'Notifications',
+    markAllRead: 'Mark all as read',
+    noNotifications: 'No notifications',
+    notifApply: '📬 New postcard approval request',
+    notifApproved: '✅ Postcard approved',
+    notifComment: '💬 New comment notification',
+    justNow: 'Just now',
+    minutesAgo: 'm ago',
+    hoursAgo: 'h ago',
+    daysAgo: 'd ago',
+
+    // いいね機能
+    like: 'Like',
+    unlike: 'Unlike',
+    likeCount: 'Likes',
+    alertLoginRequiredLike: 'Please log in to like 🔐',
+
+    // Admin Settings and Panel
+    adminFeatures: 'Admin Features',
+    openAdminPanel: 'Open Admin Panel',
+    adminPanel: 'Admin Panel',
+    noToken: '❌ Authentication Token not provided',
+    pleaseLogin: 'Please log in',
+    userManagement: '👥 User Management',
+    messageManagement: '💬 Message Management',
+    allUsers: 'All Users',
+    allMessages: 'All Messages',
+    username: 'Username',
+    displayName: 'Display Name',
+    email: 'Email',
+    role: 'Role',
+    userRole: 'User',
+    adminRole: 'Admin',
+    createdAt: 'Created At',
+    noMessages: 'No messages yet',
+    deleteBtn: 'Delete',
+    confirmDeleteMessage: 'Are you sure you want to delete this message?',
+    fetchUsersFailed: 'Failed to load users',
+    networkError: 'Network Error: ',
+    changeRoleFailed: 'Failed to modify role',
+    deleteMessageFailed: 'Failed to delete message',
+
+    // Notification Details
+    notifApplyDetail: 'submitted a new postcard for approval',
+    notifApprovedDetail: 'Your postcard has been approved and is now displayed on the board!',
+    notifCommentDetail: 'commented on your postcard',
+    notifLikeDetail: 'liked your postcard',
+
+    // Time Units
+    minutesUnit: 'min',
+    secondsUnit: 'sec',
 
   },
 

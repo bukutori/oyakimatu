@@ -355,6 +355,7 @@ function App() {
             if (meData.user.language) {
               console.log('[Auth] 載入語言設定:', meData.user.language);
               setLanguage(meData.user.language);
+              localStorage.setItem('my-art-tools-language', meData.user.language);
             }
             
             if (meData.user.themeSettings) {
@@ -491,6 +492,7 @@ function App() {
         }
         if (data.user.language) {
           setLanguage(data.user.language);
+          localStorage.setItem('my-art-tools-language', data.user.language);
         }
         if (data.user.themeSettings) {
           if (data.user.themeSettings.isDarkMode !== undefined) {

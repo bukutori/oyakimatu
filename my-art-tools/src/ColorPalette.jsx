@@ -198,7 +198,7 @@ export default function ColorPalette({ theme = 'dark', language = 'zh' }) {
             {/* 頂部標題與按鈕 */}
             <div style={styles.header}>
                 <div>
-                    <h3 style={styles.title}>🎨 {t('themePalette')}</h3>
+                    <h3 style={styles.title}>{t('themePalette')}</h3>
                     <p style={styles.subtitle}>{t('clickToCopy')}</p>
                      <p style={styles.subtitle}>{t('clickToChange')}</p>
                 </div>
@@ -218,7 +218,7 @@ export default function ColorPalette({ theme = 'dark', language = 'zh' }) {
                             if (!isRandomMode) e.currentTarget.style.transform = 'translateY(0)';
                         }}
                     >
-                        🎨 {t('harmoniousPalette')}
+                        {t('harmoniousPalette')}
                     </button>
                     <button
                         onClick={handleRandomMode}
@@ -235,7 +235,7 @@ export default function ColorPalette({ theme = 'dark', language = 'zh' }) {
                             if (isRandomMode) e.currentTarget.style.transform = 'translateY(0)';
                         }}
                     >
-                        🎲 {t('randomPalette')}
+                        {t('randomPalette')}
                     </button>
                 </div>
             </div>

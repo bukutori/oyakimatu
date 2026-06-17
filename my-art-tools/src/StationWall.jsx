@@ -4,20 +4,20 @@
  *
  * ── 第四階段：前後端認證與狀態持久化大整合 ─────────────────────────────────────
  *
- * ✅ 普通使用者持久化：
+ *  普通使用者持久化：
  *    - fetchApprovedPosts 帶上 token，後端同時回傳該用戶的 pending 卡片
  *    - pending 卡片顯示「明信片已送出，等待管理員審核！」醒目橫幅
  *    - 發文成功後樂觀插入卡片到本地 state，不需重新整理
  *
- * ✅ 管理員審核後台：
+ *  管理員審核後台：
  *    - admin 解鎖「旅人明信片」/「待審核驛站」切換 Tabs
  *    - fetchPendingPosts 攜帶 Authorization: Bearer ${token}
  *    - 核准/婉拒後即時從 pendingPosts state 移除（不重新拉取）
  *
- * ✅ 審核牆毛玻璃特效：
+ *  審核牆毛玻璃特效：
  *    - pending tab 的圖片套用 blur-md hover:blur-none transition duration-300
  *
- * ✅ 環境變數安全規範：
+ *  環境變數安全規範：
  *    - 所有 API Base URL 透過 import.meta.env.VITE_API_URL 讀取
  */
 
@@ -177,7 +177,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
-          // ⚠️ 不要手動設定 Content-Type，讓瀏覽器自動設定 multipart boundary
+          //  不要手動設定 Content-Type，讓瀏覽器自動設定 multipart boundary
         },
         body: formDataToSend
       });
@@ -185,7 +185,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
       const data = await response.json();
 
       if (data.success) {
-        // ✅ 樂觀插入：立即把新卡片（pending 狀態）加到畫面最前面
+        //  樂觀插入：立即把新卡片（pending 狀態）加到畫面最前面
         const newPost = data.post;
         setPosts(prev => [newPost, ...prev]);
 
@@ -694,7 +694,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     />
                   ) : (
                     <div>
-                      <div style={{ fontSize: '36px', marginBottom: '8px' }}>📷</div>
+                      <div style={{ fontSize: '36px', marginBottom: '8px' }}></div>
                       <p style={{ color: currentTheme.textSecondary, fontSize: '14px', margin: 0 }}>
                         {t('uploadHint')}<br />
                         <span style={{ fontSize: '12px', opacity: 0.7 }}>
@@ -933,7 +933,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                         onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
                         onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
                       >
-                        🗑️
+                        
                       </button>
                     )}
 
@@ -990,7 +990,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     fontSize: '13px',
                     fontWeight: '700'
                   }}>
-                    <span style={{ fontSize: '16px' }}>📬</span>
+                    <span style={{ fontSize: '16px' }}></span>
                     <span>{t('myPendingCard')}</span>
                   </div>
                 )}
@@ -1022,7 +1022,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                         fontSize: '14px',
                         fontWeight: '700'
                       }}>
-                        ✍️ {post.username}
+                         {post.username}
                       </span>
                       {/* 管理員看到的待審核 badge（非普通用戶那個） */}
                       {isPending && user && user.role === 'admin' && (
@@ -1058,7 +1058,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                           onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
                           title="刪除這張明信片"
                         >
-                          🗑️
+                          
                         </button>
                       )}
                     </div>
@@ -1127,7 +1127,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                         transition: 'transform 0.15s ease',
                         display: 'inline-block',
                       }}>
-                        {hasLiked(post) ? '❤️' : '🤍'}
+                        {hasLiked(post) ? '' : ''}
                       </span>
                       <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>
                         {post.likes ? post.likes.length : 0} {t('likeCount')}
@@ -1136,7 +1136,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
 
                     {/* 留言數 */}
                     <span style={{ fontSize: '0.85rem', color: theme === 'dark' ? '#8a7a60' : '#8b7355' }}>
-                      💬 {post.comments ? post.comments.length : 0}
+                       {post.comments ? post.comments.length : 0}
                     </span>
                   </div>
 
@@ -1162,7 +1162,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                       e.currentTarget.style.backgroundColor = theme === 'dark' ? '#2a2a2a' : '#e8d5c4';
                     }}
                   >
-                    💬 {expandedComments[post._id] ? t('hideComments') : `${t('showComments')} (${post.comments?.length || 0})`}
+                     {expandedComments[post._id] ? t('hideComments') : `${t('showComments')} (${post.comments?.length || 0})`}
                   </button>
 
                   {/* 留言區塊（展開時顯示） */}
@@ -1245,7 +1245,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                       gap: '10px',
                       marginTop: '12px'
                     }}>
-                      {/* 🟢 核准 */}
+                      {/*  核准 */}
                       <button
                         id={`btn-approve-${post._id}`}
                         onClick={() => handleApprove(post._id)}
@@ -1277,10 +1277,10 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                           e.currentTarget.style.transform = 'translateY(0)';
                         }}
                       >
-                        {approvingId === post._id ? '核准中...' : '🟢 核准上線'}
+                        {approvingId === post._id ? '核准中...' : ' 核准上線'}
                       </button>
 
-                      {/* 🔴 婉拒 */}
+                      {/*  婉拒 */}
                       <button
                         id={`btn-reject-${post._id}`}
                         onClick={() => handleDelete(post._id)}
@@ -1312,7 +1312,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                           e.currentTarget.style.transform = 'translateY(0)';
                         }}
                       >
-                        {rejectingId === post._id ? '刪除中...' : '🔴 婉拒刪除'}
+                        {rejectingId === post._id ? '刪除中...' : ' 婉拒刪除'}
                       </button>
                     </div>
                   )}
@@ -1331,7 +1331,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
           color: currentTheme.textSecondary
         }}>
           <div style={{ fontSize: '56px', marginBottom: '20px', opacity: 0.6 }}>
-            {activeTab === 'public' ? '📭' : '✅'}
+            {activeTab === 'public' ? '' : ''}
           </div>
           <p style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>
             {activeTab === 'public'
@@ -1438,7 +1438,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ color: theme === 'dark' ? '#d4a96a' : '#8b7355', fontSize: '15px', fontWeight: '800' }}>
-                      ✍️ {lightboxPost.username}
+                       {lightboxPost.username}
                     </span>
                     {user && user.role === 'admin' && (
                       <button
@@ -1519,7 +1519,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                       transition: 'transform 0.15s ease',
                       display: 'inline-block',
                     }}>
-                      {hasLiked(lightboxPost) ? '❤️' : '🤍'}
+                      {hasLiked(lightboxPost) ? '' : ''}
                     </span>
                     <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>
                       {lightboxPost.likes ? lightboxPost.likes.length : 0} {t('likeCount')}
@@ -1555,7 +1555,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                   <div style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: currentTheme.textSecondary, opacity: 0.7
                   }}>
-                    <span style={{ fontSize: '40px', marginBottom: '8px' }}>💬</span>
+                    <span style={{ fontSize: '40px', marginBottom: '8px' }}></span>
                     <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>{t('noComments')}</p>
                   </div>
                 )}

@@ -34,6 +34,8 @@ const TRANSLATIONS = {
 
     logout: '登出',
 
+    onlineTravelers: '在線旅人',
+
     explore: '探索靈感',
 
     favorites: '我的收藏',
@@ -43,6 +45,10 @@ const TRANSLATIONS = {
     inspiration: '靈感抽籤',
 
     palette: '主題色票',
+    noPalette: '無可用色票',
+    copied: '已複製',
+    toolbox: '工具箱',
+    grayscale: '關閉色彩 - 明度模式',
 
     station: '驛站留言牆',
 
@@ -94,9 +100,9 @@ const TRANSLATIONS = {
 
     favorite: '加入收藏',
 
-    customReference: '📁 自訂參考：',
+    customReference: '自訂參考：',
 
-    referenceSource: '👤 參考圖源：',
+    referenceSource: '參考圖源：',
 
     selectLocalImages: '選擇本地圖片 (支援複選批次練習)',
 
@@ -112,7 +118,7 @@ const TRANSLATIONS = {
 
     nextImage: '下一張 (Skip)',
 
-    clickToClose: '點擊背景或右上角 ✕ 關閉',
+    clickToClose: '點擊背景或右上角 × 關閉',
 
     // 主題調色盤
 
@@ -136,9 +142,9 @@ const TRANSLATIONS = {
 
     imageChallenge: '圖片挑戰',
 
-    randomDrawingChallenge: '🎲 隨機繪畫挑戰',
+    randomDrawingChallenge: ' 隨機繪畫挑戰',
 
-    capturingMood: '🔮 正在捕捉共鳴意境...',
+    capturingMood: ' 正在捕捉共鳴意境...',
 
     moodResonance: '意境共鳴：',
 
@@ -150,11 +156,11 @@ const TRANSLATIONS = {
 
     clickToDraw: '點擊下方按鈕，抽一張天馬行空的靈感圖片！',
 
-    summonChallenge: '🎲 召喚隨機挑戰',
+    summonChallenge: ' 召喚隨機挑戰',
 
-    drawingLottery: '🎰 抽籤中...',
+    drawingLottery: ' 抽籤中...',
 
-    drawInspirationImage: '🌌 抽一張靈感圖',
+    drawInspirationImage: ' 抽一張靈感圖',
 
     // 靈感圖庫
 
@@ -174,7 +180,7 @@ const TRANSLATIONS = {
 
     pinnedCanvas: '釘選對照畫布',
 
-    multiCompare: '🔍 多圖對比',
+    multiCompare: ' 多圖對比',
 
     clear: '清空',
 
@@ -201,21 +207,21 @@ const TRANSLATIONS = {
     copy: 'Copy',
 
     // 時光驛站牆 & 頁尾
-    stationTitle: '🚂 時光驛站牆',
+    stationTitle: ' 時光驛站牆',
     stationDesc: '分享你的創作故事，與旅人們交流靈感',
-    tabPublic: '🌍 旅人明信片',
-    tabPending: '⏳ 待審核驛站',
-    btnOpenPostForm: '📮 掛上我的明信片',
-    createPostcard: '📝 創作你的明信片',
-    uploadImage: '📷 上傳圖片',
+    tabPublic: ' 旅人明信片',
+    tabPending: '待審核驛站',
+    btnOpenPostForm: '掛上我的明信片',
+    createPostcard: '創作你的明信片',
+    uploadImage: '上傳圖片',
     uploadHint: '點擊或拖曳圖片至此處上傳',
     uploadSupport: '支援 JPG、PNG、GIF、WebP（最大 10MB）',
-    storyText: '✍️ 故事文字',
+    storyText: '故事文字',
     storyPlaceholder: '分享你的創作故事、旅程心得、或一句觸動你的話...',
-    btnSubmitPost: '📤 送出明信片',
-    submitting: '⏳ 上傳中...',
+    btnSubmitPost: '送出明信片',
+    submitting: '上傳中...',
     cancel: '取消',
-    pendingExplain: '🔍 以下為待審核明信片——圖片預設模糊，懸停可預覽。請仔細審核後再決定核准或婉拒。',
+    pendingExplain: '以下為待審核明信片——圖片預設模糊，懸停可預覽。請仔細審核後再決定核准或婉拒。',
     myPendingCard: '明信片已送出，等待管理員審核！',
     pendingBadge: '待審核',
     hideComments: '隱藏留言',
@@ -224,25 +230,25 @@ const TRANSLATIONS = {
     commentPlaceholder: '寫下你的留言...',
     loginRequiredComment: '請先登入才能留言',
     send: '送出',
-    btnApprove: '🟢 核准上線',
+    btnApprove: '核准上線',
     approving: '核准中...',
-    btnReject: '🔴 婉拒刪除',
+    btnReject: '婉拒刪除',
     rejecting: '刪除中...',
     emptyPublic: '還沒有明信片，成為第一個分享者吧！',
-    emptyPending: '沒有待審核的明信片，一切清空 ✨',
-    delete: '🗑️ 刪除',
-    pendingNoComment: '⏳ 待審核的明信片無法留言',
+    emptyPending: '沒有待審核的明信片，一切清空',
+    delete: '刪除',
+    pendingNoComment: '待審核的明信片無法留言',
     alertSizeLimit: '圖片檔案大小不能超過 10MB',
-    alertLoginRequiredPost: '請先登入才能發布明信片 🔐',
+    alertLoginRequiredPost: '請先登入才能發布明信片',
     alertSelectImage: '請選擇圖片',
     alertTextRequired: '請填寫故事文字',
     alertUploadSuccess: '明信片已送出，等待管理員審核！',
     alertUploadFailed: '發布失敗，請稍後再試',
     alertNetworkFailed: '網路連線失敗，請稍後再試',
-    alertApproveSuccess: '✅ 明信片已核准上線！',
+    alertApproveSuccess: '明信片已核准上線！',
     alertApproveFailed: '核准失敗，請稍後再試',
     confirmDelete: '確定要永久刪除這張明信片嗎？',
-    alertDeleteSuccess: '🗑️ 明信片已刪除',
+    alertDeleteSuccess: ' 明信片已刪除',
     alertDeleteFailed: '刪除失敗，請稍後再試',
     alertLoginRequiredComment: '請先登入才能留言',
     alertCommentSuccess: '留言成功！',
@@ -263,9 +269,9 @@ const TRANSLATIONS = {
     notifications: '通知',
     markAllRead: '全部已讀',
     noNotifications: '目前沒有通知',
-    notifApply: '📬 新的明信片審核申請',
-    notifApproved: '✅ 明信片已通過審核',
-    notifComment: '💬 新留言通知',
+    notifApply: ' 新的明信片審核申請',
+    notifApproved: ' 明信片已通過審核',
+    notifComment: ' 新留言通知',
     justNow: '剛剛',
     minutesAgo: '分前',
     hoursAgo: '小時前',
@@ -275,16 +281,16 @@ const TRANSLATIONS = {
     like: '按讚',
     unlike: '取消按讚',
     likeCount: '個讚',
-    alertLoginRequiredLike: '請先登入才能按讚 🔐',
+    alertLoginRequiredLike: '請先登入才能按讚 ',
 
     // 管理員設定與面板
     adminFeatures: '管理員功能',
     openAdminPanel: '開啟管理員面板',
     adminPanel: '管理員面板',
-    noToken: '❌ 未提供認證 Token',
+    noToken: ' 未提供認證 Token',
     pleaseLogin: '請先登入',
-    userManagement: '👥 用戶管理',
-    messageManagement: '💬 留言管理',
+    userManagement: ' 用戶管理',
+    messageManagement: ' 留言管理',
     allUsers: '所有用戶',
     allMessages: '所有留言',
     username: '用戶名稱',
@@ -341,6 +347,8 @@ const TRANSLATIONS = {
     register: '登録',
 
     logout: 'ログアウト',
+
+    onlineTravelers: 'オンライン旅人',
 
     explore: 'ギャラリー',
 
@@ -402,9 +410,9 @@ const TRANSLATIONS = {
 
     favorite: 'お気に入り追加',
 
-    customReference: '📁 カスタム参照：',
+    customReference: ' カスタム参照：',
 
-    referenceSource: '👤 参照ソース：',
+    referenceSource: ' 参照ソース：',
 
     selectLocalImages: 'ローカル画像を選択（複数選択可能）',
 
@@ -420,7 +428,7 @@ const TRANSLATIONS = {
 
     nextImage: '次の画像 (Skip)',
 
-    clickToClose: '背景または右上の ✕ をクリックして閉じる',
+    clickToClose: '背景または右上の × をクリックして閉じる',
 
     // 主題調色盤
 
@@ -444,9 +452,9 @@ const TRANSLATIONS = {
 
     imageChallenge: '画像チャレンジ',
 
-    randomDrawingChallenge: '🎲 ランダム絵画チャレンジ',
+    randomDrawingChallenge: ' ランダム絵画チャレンジ',
 
-    capturingMood: '🔮 雰囲気をキャプチャ中...',
+    capturingMood: ' 雰囲気をキャプチャ中...',
 
     moodResonance: '雰囲気共鳴：',
 
@@ -458,11 +466,11 @@ const TRANSLATIONS = {
 
     clickToDraw: 'ボタンをクリックして自由なインスピレーション画像を抽選！',
 
-    summonChallenge: '🎲 ランダムチャレンジ召喚',
+    summonChallenge: ' ランダムチャレンジ召喚',
 
-    drawingLottery: '🎰 抽選中...',
+    drawingLottery: ' 抽選中...',
 
-    drawInspirationImage: '🌌 インスピレーション画像を抽選',
+    drawInspirationImage: ' インスピレーション画像を抽選',
 
     // 靈感圖庫
 
@@ -482,7 +490,7 @@ const TRANSLATIONS = {
 
     pinnedCanvas: 'ピン留めキャンバス',
 
-    multiCompare: '🔍 複数比較',
+    multiCompare: ' 複数比較',
 
     clear: 'クリア',
 
@@ -509,21 +517,21 @@ const TRANSLATIONS = {
     copy: 'Copy',
 
     // 時光驛站牆 & 頁尾
-    stationTitle: '🚂 駅のメッセージボード',
+    stationTitle: ' 駅のメッセージボード',
     stationDesc: '創作ストーリーを共有し、旅人とインスピレーションを交流しましょう',
-    tabPublic: '🌍 旅人の絵葉書',
+    tabPublic: ' 旅人の絵葉書',
     tabPending: '⏳ 承認待ち駅',
-    btnOpenPostForm: '📮 絵葉書を投稿する',
-    createPostcard: '📝 絵葉書を作成する',
-    uploadImage: '📷 画像アップロード',
+    btnOpenPostForm: ' 絵葉書を投稿する',
+    createPostcard: ' 絵葉書を作成する',
+    uploadImage: ' 画像アップロード',
     uploadHint: 'クリックまたは画像をドラッグしてアップロード',
     uploadSupport: 'JPG、PNG、GIF、WebPに対応（最大10MB）',
-    storyText: '✍️ ストーリーテキスト',
+    storyText: ' ストーリーテキスト',
     storyPlaceholder: '創作の裏話、旅の感想、または心に響いた言葉を共有しましょう...',
-    btnSubmitPost: '📤 絵葉書を送る',
+    btnSubmitPost: ' 絵葉書を送る',
     submitting: '⏳ アップロード中...',
     cancel: 'キャンセル',
-    pendingExplain: '🔍 こちらは承認待ちの絵葉書です——画像はデフォルトでぼかしがかかっており、ホバーでプレビューできます。よくご確認の上、承認または却下を決定してください。',
+    pendingExplain: ' こちらは承認待ちの絵葉書です——画像はデフォルトでぼかしがかかっており、ホバーでプレビューできます。よくご確認の上、承認または却下を決定してください。',
     myPendingCard: '絵葉書は送信されました。管理者の承認をお待ちください！',
     pendingBadge: '承認待ち',
     hideComments: 'コメントを非表示',
@@ -532,25 +540,25 @@ const TRANSLATIONS = {
     commentPlaceholder: 'コメントを書く...',
     loginRequiredComment: 'コメントを投稿するにはログインしてください',
     send: '送信',
-    btnApprove: '🟢 承認する',
+    btnApprove: ' 承認する',
     approving: '承認中...',
-    btnReject: '🔴 却下して削除',
+    btnReject: ' 却下して削除',
     rejecting: '削除中...',
     emptyPublic: '絵葉書はまだありません。最初の共有者になりましょう！',
-    emptyPending: '承認待ちの絵葉書はありません。すべて完了です ✨',
-    delete: '🗑️ 削除',
+    emptyPending: '承認待ちの絵葉書はありません。すべて完了です ',
+    delete: ' 削除',
     pendingNoComment: '⏳ 承認待ちの絵葉書にはコメントできません',
     alertSizeLimit: '画像のファイルサイズは10MBを超えられません',
-    alertLoginRequiredPost: '絵葉書を投稿するにはログインしてください 🔐',
+    alertLoginRequiredPost: '絵葉書を投稿するにはログインしてください ',
     alertSelectImage: '画像を選択してください',
     alertTextRequired: 'ストーリーテキストを入力してください',
     alertUploadSuccess: '絵葉書は送信されました。管理者の承認をお待ちください！',
     alertUploadFailed: '投稿に失敗しました。後で再試行してください',
     alertNetworkFailed: 'ネットワーク接続に失敗しました。後で再試行してください',
-    alertApproveSuccess: '✅ 絵葉書が承認されました！',
+    alertApproveSuccess: ' 絵葉書が承認されました！',
     alertApproveFailed: '承認に失敗しました。後で再試行してください',
     confirmDelete: 'この絵葉書を永久に削除してもよろしいですか？',
-    alertDeleteSuccess: '🗑️ 絵葉書が削除されました',
+    alertDeleteSuccess: ' 絵葉書が削除されました',
     alertDeleteFailed: '削除に失敗しました。後で再試行してください',
     alertLoginRequiredComment: 'コメントを投稿するにはログインしてください',
     alertCommentSuccess: 'コメントが投稿されました！',
@@ -571,9 +579,9 @@ const TRANSLATIONS = {
     notifications: '通知',
     markAllRead: 'すべて既読',
     noNotifications: '現在通知はありません',
-    notifApply: '📬 新しい絵葉書の承認申請',
-    notifApproved: '✅ 絵葉書が承認されました',
-    notifComment: '💬 新しいコメント',
+    notifApply: ' 新しい絵葉書の承認申請',
+    notifApproved: ' 絵葉書が承認されました',
+    notifComment: ' 新しいコメント',
     justNow: 'たった今',
     minutesAgo: '分前',
     hoursAgo: '時間前',
@@ -583,16 +591,16 @@ const TRANSLATIONS = {
     like: 'いいね',
     unlike: 'いいね取消',
     likeCount: 'いいね',
-    alertLoginRequiredLike: 'いいねするにはログインしてください 🔐',
+    alertLoginRequiredLike: 'いいねするにはログインしてください ',
 
     // 管理者設定とパネル
     adminFeatures: '管理者機能',
     openAdminPanel: '管理者パネルを開く',
     adminPanel: '管理者パネル',
-    noToken: '❌ トークンが提供されていません',
+    noToken: ' トークンが提供されていません',
     pleaseLogin: 'ログインしてください',
-    userManagement: '👥 ユーザー管理',
-    messageManagement: '💬 コメント管理',
+    userManagement: ' ユーザー管理',
+    messageManagement: ' コメント管理',
     allUsers: 'すべてのユーザー',
     allMessages: 'すべてのコメント',
     username: 'ユーザー名',
@@ -649,6 +657,8 @@ const TRANSLATIONS = {
     register: 'Register',
 
     logout: 'Log Out',
+
+    onlineTravelers: 'Online Travelers',
 
     explore: 'Explore Inspiration',
 
@@ -710,9 +720,9 @@ const TRANSLATIONS = {
 
     favorite: 'Add to Favorites',
 
-    customReference: '📁 Custom Reference:',
+    customReference: ' Custom Reference:',
 
-    referenceSource: '👤 Reference Source:',
+    referenceSource: ' Reference Source:',
 
     selectLocalImages: 'Select local images (supports multiple selection for batch practice)',
 
@@ -728,7 +738,7 @@ const TRANSLATIONS = {
 
     nextImage: 'Next Image (Skip)',
 
-    clickToClose: 'Click background or ✕ to close',
+    clickToClose: 'Click background or × to close',
 
     // 主題調色盤
 
@@ -752,9 +762,9 @@ const TRANSLATIONS = {
 
     imageChallenge: 'Image Challenge',
 
-    randomDrawingChallenge: '🎲 Random Drawing Challenge',
+    randomDrawingChallenge: ' Random Drawing Challenge',
 
-    capturingMood: '🔮 Capturing vibe...',
+    capturingMood: ' Capturing vibe...',
 
     moodResonance: 'Vibe resonance:',
 
@@ -766,11 +776,11 @@ const TRANSLATIONS = {
 
     clickToDraw: 'Click button below to draw a random inspiration image!',
 
-    summonChallenge: '🎲 Summon Random Challenge',
+    summonChallenge: ' Summon Random Challenge',
 
-    drawingLottery: '🎰 Drawing...',
+    drawingLottery: ' Drawing...',
 
-    drawInspirationImage: '🌌 Draw Inspiration Image',
+    drawInspirationImage: ' Draw Inspiration Image',
 
     // 靈感圖庫
 
@@ -790,7 +800,7 @@ const TRANSLATIONS = {
 
     pinnedCanvas: 'Pinned Reference Canvas',
 
-    multiCompare: '🔍 Compare Images',
+    multiCompare: ' Compare Images',
 
     clear: 'Clear',
 
@@ -817,21 +827,21 @@ const TRANSLATIONS = {
     copy: 'Copy',
 
     // 時光驛站牆 & 頁尾
-    stationTitle: '🚂 Message Board',
+    stationTitle: ' Message Board',
     stationDesc: 'Share your creative stories and exchange inspiration with other travelers',
-    tabPublic: '🌍 Travelers\' Postcards',
+    tabPublic: ' Travelers\' Postcards',
     tabPending: '⏳ Pending Postcards',
-    btnOpenPostForm: '📮 Post My Postcard',
-    createPostcard: '📝 Create Your Postcard',
-    uploadImage: '📷 Upload Image',
+    btnOpenPostForm: ' Post My Postcard',
+    createPostcard: ' Create Your Postcard',
+    uploadImage: ' Upload Image',
     uploadHint: 'Click or drag image here to upload',
     uploadSupport: 'Supports JPG, PNG, GIF, WebP (Max 10MB)',
-    storyText: '✍️ Story Text',
+    storyText: ' Story Text',
     storyPlaceholder: 'Share your story, journey notes, or quotes that touched you...',
-    btnSubmitPost: '📤 Send Postcard',
+    btnSubmitPost: ' Send Postcard',
     submitting: '⏳ Uploading...',
     cancel: 'Cancel',
-    pendingExplain: '🔍 Below are pending postcards - images are blurred by default, hover to preview. Review carefully before approving or rejecting.',
+    pendingExplain: ' Below are pending postcards - images are blurred by default, hover to preview. Review carefully before approving or rejecting.',
     myPendingCard: 'Postcard submitted, waiting for admin approval!',
     pendingBadge: 'Pending',
     hideComments: 'Hide Comments',
@@ -840,25 +850,25 @@ const TRANSLATIONS = {
     commentPlaceholder: 'Write a comment...',
     loginRequiredComment: 'Please log in to leave a comment',
     send: 'Send',
-    btnApprove: '🟢 Approve',
+    btnApprove: ' Approve',
     approving: 'Approving...',
-    btnReject: '🔴 Reject & Delete',
+    btnReject: ' Reject & Delete',
     rejecting: 'Deleting...',
     emptyPublic: 'No postcards yet. Be the first to share!',
-    emptyPending: 'No pending postcards. All clear! ✨',
-    delete: '🗑️ Delete',
+    emptyPending: 'No pending postcards. All clear! ',
+    delete: ' Delete',
     pendingNoComment: '⏳ Cannot comment on pending postcards',
     alertSizeLimit: 'Image size cannot exceed 10MB',
-    alertLoginRequiredPost: 'Please log in to publish a postcard 🔐',
+    alertLoginRequiredPost: 'Please log in to publish a postcard ',
     alertSelectImage: 'Please select an image',
     alertTextRequired: 'Please enter story text',
     alertUploadSuccess: 'Postcard submitted, waiting for admin approval!',
     alertUploadFailed: 'Submission failed, please try again later',
     alertNetworkFailed: 'Network connection failed, please try again later',
-    alertApproveSuccess: '✅ Postcard approved!',
+    alertApproveSuccess: ' Postcard approved!',
     alertApproveFailed: 'Approval failed, please try again later',
     confirmDelete: 'Are you sure you want to permanently delete this postcard?',
-    alertDeleteSuccess: '🗑️ Postcard deleted',
+    alertDeleteSuccess: ' Postcard deleted',
     alertDeleteFailed: 'Deletion failed, please try again later',
     alertLoginRequiredComment: 'Please log in to leave a comment',
     alertCommentSuccess: 'Commented successfully!',
@@ -879,9 +889,9 @@ const TRANSLATIONS = {
     notifications: 'Notifications',
     markAllRead: 'Mark all as read',
     noNotifications: 'No notifications',
-    notifApply: '📬 New postcard approval request',
-    notifApproved: '✅ Postcard approved',
-    notifComment: '💬 New comment notification',
+    notifApply: ' New postcard approval request',
+    notifApproved: ' Postcard approved',
+    notifComment: ' New comment notification',
     justNow: 'Just now',
     minutesAgo: 'm ago',
     hoursAgo: 'h ago',
@@ -891,16 +901,16 @@ const TRANSLATIONS = {
     like: 'Like',
     unlike: 'Unlike',
     likeCount: 'Likes',
-    alertLoginRequiredLike: 'Please log in to like 🔐',
+    alertLoginRequiredLike: 'Please log in to like ',
 
     // Admin Settings and Panel
     adminFeatures: 'Admin Features',
     openAdminPanel: 'Open Admin Panel',
     adminPanel: 'Admin Panel',
-    noToken: '❌ Authentication Token not provided',
+    noToken: ' Authentication Token not provided',
     pleaseLogin: 'Please log in',
-    userManagement: '👥 User Management',
-    messageManagement: '💬 Message Management',
+    userManagement: ' User Management',
+    messageManagement: ' Message Management',
     allUsers: 'All Users',
     allMessages: 'All Messages',
     username: 'Username',

@@ -103,6 +103,16 @@ const THEMES = {
 
 
 
+const SESSION_ID_KEY = 'my-art-tools-session-id';
+const getSessionId = () => {
+  let id = sessionStorage.getItem(SESSION_ID_KEY);
+  if (!id) {
+    id = 'sess_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    sessionStorage.setItem(SESSION_ID_KEY, id);
+  }
+  return id;
+};
+
 // ─────────────────────────────────────────────────────────
 
 // App：最上層狀態持有者
@@ -118,6 +128,8 @@ function App() {
   const [user, setUser] = useState(null);
 
   const [token, setToken] = useState(null);
+
+  const [onlineCount, setOnlineCount] = useState(1);
 
   const [showAuthModal, setShowAuthModal] = useState(false);
 
@@ -197,6 +209,27 @@ function App() {
 
     return () => clearInterval(timer);
 
+  }, []);
+
+  // ── 1.7 在線人數計數器 ───────────────────────────────
+
+  useEffect(() => {
+    const sessId = getSessionId();
+    const fetchOnlineCount = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/online-count?sessionId=${sessId}`);
+        const data = await response.json();
+        if (data.success && typeof data.count === 'number') {
+          setOnlineCount(data.count);
+        }
+      } catch (err) {
+        console.error('Failed to fetch online count:', err);
+      }
+    };
+
+    fetchOnlineCount();
+    const interval = setInterval(fetchOnlineCount, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // 時間感知背景切換邏輯
@@ -552,14 +585,22 @@ function App() {
 
 
       if (data.success) {
+        setToken(data.token);
+        setUser(data.user);
+        localStorage.setItem(AUTH_KEY, JSON.stringify({ token: data.token, user: data.user }));
 
-        setAuthMode('login');
+        if (data.user.favorites && Array.isArray(data.user.favorites)) {
+          setSavedImages(data.user.favorites);
+        }
+
+        setShowAuthModal(false);
+        setActiveView('station');
 
         setToast({
 
           show: true,
 
-          message: '🎉 註冊成功！歡迎加入時光驛站，請輸入帳密開始您的旅程！',
+          message: ' 註冊並登入成功！歡迎來到繪師驛站，開始您的創作旅程！',
 
           type: 'success'
 
@@ -1316,6 +1357,37 @@ function App() {
             flexShrink: 0,
           }}>
 
+            {/* 在線人數計數器 */}
+            <div
+              className="hide-mobile"
+              style={{
+                padding: '6px 12px',
+                borderRadius: '10px',
+                background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
+                border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)',
+                color: currentTheme.text,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: '#10b981',
+                  boxShadow: '0 0 8px #10b981',
+                  display: 'inline-block',
+                  animation: 'pulseNotif 1.5s infinite',
+                }}
+              />
+              <span>{t('onlineTravelers')}: {onlineCount} 人</span>
+            </div>
+
             {/* 數位時鐘 (桌面顯示) */}
             <div
               className="hide-mobile"
@@ -1375,7 +1447,7 @@ function App() {
                 }
               }}
             >
-              {isDarkMode ? '🌙' : '☀️'}
+              {isDarkMode ? '' : ''}
             </button>
 
 
@@ -1413,7 +1485,7 @@ function App() {
                       e.currentTarget.style.transform = 'scale(1)';
                     }}
                   >
-                    🔔
+                    
                     {unreadNotifCount > 0 && (
                       <span
                         style={{
@@ -1523,10 +1595,10 @@ function App() {
                             >
                               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                                 <span style={{ fontSize: '1rem', flexShrink: 0 }}>
-                                  {notif.type === 'apply' && '📬'}
-                                  {notif.type === 'approved' && '✅'}
-                                  {notif.type === 'comment' && '💬'}
-                                  {notif.type === 'like' && '❤️'}
+                                  {notif.type === 'apply' && ''}
+                                  {notif.type === 'approved' && ''}
+                                  {notif.type === 'comment' && ''}
+                                  {notif.type === 'like' && ''}
                                 </span>
                                 <div style={{ flex: 1, fontSize: '0.78rem', color: currentTheme.text, lineHeight: '1.4', textAlign: 'left' }}>
                                   {notif.type === 'apply' && (
@@ -1585,7 +1657,7 @@ function App() {
                     e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
                   }}
                 >
-                  ⚙️
+                  
                 </button>
               </>
             )}
@@ -1606,7 +1678,6 @@ function App() {
                   background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)',
                   border: isLight ? '1px solid rgba(0,0,0,0.07)' : '1px solid rgba(255,255,255,0.07)',
                 }}>
-                  <span style={{ fontSize: '1rem' }}>👤</span>
                   <span style={{
                     color: currentTheme.text,
                     fontSize: '0.82rem',
@@ -1694,7 +1765,6 @@ function App() {
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                <span>👤</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{t('login')} / {t('register')}</span>
               </button>
             )}
@@ -1838,7 +1908,7 @@ function App() {
                           {safeSavedImages.length}
                         </span>
                       )}
-                      {isActive && <span style={{ fontSize: '0.8rem' }}>✓</span>}
+                      {isActive && <span style={{ fontSize: '0.8rem' }}></span>}
                       {tab.external && <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>↗</span>}
                     </div>
                   </button>
@@ -1872,6 +1942,38 @@ function App() {
               </span>
             </div>
 
+            {/* 在線人數計數器（手機版） */}
+            <div style={{
+              padding: '10px 16px',
+              borderRadius: '12px',
+              background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
+              border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              animation: 'fadeInUp 0.25s ease 0.16s both',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: '#10b981',
+                    boxShadow: '0 0 8px #10b981',
+                    display: 'inline-block',
+                    animation: 'pulseNotif 1.5s infinite',
+                  }}
+                />
+                <span style={{ fontSize: '0.88rem', fontWeight: '600', color: currentTheme.text }}>
+                  {t('onlineTravelers')}
+                </span>
+              </div>
+              <span style={{ fontSize: '0.88rem', fontWeight: '700', color: '#10b981' }}>
+                {onlineCount} 人
+              </span>
+            </div>
+
             {/* 用戶通知（手機版） */}
             {user && (
               <div style={{
@@ -1899,7 +2001,7 @@ function App() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '1.1rem' }}>🔔</span>
+                    <span style={{ fontSize: '1.1rem' }}></span>
                     <span style={{ fontSize: '0.88rem', fontWeight: '600' }}>{t('notifications')}</span>
                   </div>
                   {unreadNotifCount > 0 && (
@@ -1930,7 +2032,6 @@ function App() {
                 border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)',
                 animation: 'fadeInUp 0.25s ease 0.2s both',
               }}>
-                <span style={{ fontSize: '1.1rem' }}>👤</span>
                 <span style={{
                   flex: 1,
                   fontSize: '0.88rem',
@@ -1988,7 +2089,6 @@ function App() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                <span>👤</span>
                 <span>{t('login')} / {t('register')}</span>
               </button>
             )}
@@ -2147,7 +2247,7 @@ function App() {
 
               }}>
 
-                ⚙️ {t('settings')}
+                 {t('settings')}
 
               </h3>
 
@@ -2175,7 +2275,7 @@ function App() {
 
               >
 
-                ✕
+                ×
 
               </button>
 
@@ -2526,7 +2626,7 @@ function App() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '1rem',
               }}>
-                🖌️
+                
               </div>
               <h4 style={{
                 margin: '0',
@@ -2688,7 +2788,7 @@ function FavoritesGallery({ savedImages, toggleFavorite, onZoom, onGoExplore, th
 
       }}>
 
-        <span style={{ fontSize: '3.5rem', display: 'block', marginBottom: '18px' }}>🖼️</span>
+        <span style={{ fontSize: '3.5rem', display: 'block', marginBottom: '18px' }}></span>
 
         <h2 style={{ color: currentTheme.text, fontSize: '1.5rem', margin: '0 0 10px', fontWeight: '700' }}>
 
@@ -2698,7 +2798,7 @@ function FavoritesGallery({ savedImages, toggleFavorite, onZoom, onGoExplore, th
 
         <p style={{ color: isLight ? '#6b7280' : '#888', fontSize: '0.95rem', lineHeight: '1.7', margin: '0 0 28px' }}>
 
-          在「探索靈感」或「速寫練習」中<br />點擊圖片上的 🤍 愛心，即可收藏在此！
+          在「探索靈感」或「速寫練習」中<br />點擊圖片上的  愛心，即可收藏在此！
 
         </p>
 
@@ -2786,7 +2886,7 @@ function FavoritesGallery({ savedImages, toggleFavorite, onZoom, onGoExplore, th
 
         }}>
 
-          ❤️ 我的收藏
+           我的收藏
 
           <span style={{
 
@@ -2920,7 +3020,7 @@ function FavoritesGallery({ savedImages, toggleFavorite, onZoom, onGoExplore, th
 
               }}>
 
-                👤 {img.author}
+                {img.author}
 
               </span>
 
@@ -2958,7 +3058,7 @@ function FavoritesGallery({ savedImages, toggleFavorite, onZoom, onGoExplore, th
 
               >
 
-                ❤️
+                
 
               </button>
 
@@ -3118,7 +3218,7 @@ function FavoritesLightbox({ image, onClose, onUnfavorite }) {
 
         >
 
-          ✕
+          ×
 
         </button>
 
@@ -3144,7 +3244,7 @@ function FavoritesLightbox({ image, onClose, onUnfavorite }) {
 
         }}>
 
-          🖼️ 收藏大圖檢視
+           收藏大圖檢視
 
         </h4>
 
@@ -3200,7 +3300,7 @@ function FavoritesLightbox({ image, onClose, onUnfavorite }) {
 
           <span style={{ color: '#999', fontSize: '0.88rem' }}>
 
-            👤 {image.author}{image.isCustom ? '（自訂上傳）' : ''}
+{image.author}{image.isCustom ? '（自訂上傳）' : ''}
 
           </span>
 
@@ -3244,7 +3344,7 @@ function FavoritesLightbox({ image, onClose, onUnfavorite }) {
 
           >
 
-            💔 取消收藏
+             取消收藏
 
           </button>
 
@@ -3441,7 +3541,7 @@ function AuthModal({ mode, onClose, onModeChange, onLogin, onRegister, error, th
 
         >
 
-          ✕
+          ×
 
         </button>
 
@@ -3463,7 +3563,7 @@ function AuthModal({ mode, onClose, onModeChange, onLogin, onRegister, error, th
 
         }}>
 
-          {mode === 'login' ? '👤 登入會員' : '📝 註冊新會員'}
+          {mode === 'login' ? '登入會員' : '註冊新會員'}
 
         </h2>
 

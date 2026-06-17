@@ -126,7 +126,107 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
     const [canLoadMore, setCanLoadMore] = useState(true); // 是否還有更多
 
+    const [extractedPalette, setExtractedPalette] = useState([]);
+    const [copiedColorIndex, setCopiedColorIndex] = useState(null);
+    const [isGrayscale, setIsGrayscale] = useState(false);
+    const [toolboxOpen, setToolboxOpen] = useState(false);
 
+    // ── Color Extraction Effect ────────────────────────
+    useEffect(() => {
+        if (activeImage && activeImage.url) {
+            // Reset states
+            setIsGrayscale(false);
+            setCopiedColorIndex(null);
+            setExtractedPalette([]);
+            setToolboxOpen(false);
+
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = activeImage.url;
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 60;
+                    canvas.height = 60;
+                    ctx.drawImage(img, 0, 0, 60, 60);
+                    const imgData = ctx.getImageData(0, 0, 60, 60).data;
+
+                    const colors = [];
+                    for (let i = 0; i < imgData.length; i += 4) {
+                        const r = imgData[i];
+                        const g = imgData[i + 1];
+                        const b = imgData[i + 2];
+                        const a = imgData[i + 3];
+                        if (a >= 128) {
+                            colors.push({ r, g, b });
+                        }
+                    }
+
+                    // Simple popularity analysis with spacing
+                    const bins = {};
+                    colors.forEach(c => {
+                        const br = Math.round(c.r / 16) * 16;
+                        const bg = Math.round(c.g / 16) * 16;
+                        const bb = Math.round(c.b / 16) * 16;
+                        const key = `${br},${bg},${bb}`;
+                        bins[key] = (bins[key] || 0) + 1;
+                    });
+
+                    const sorted = Object.entries(bins)
+                        .map(([key, count]) => {
+                            const [r, g, b] = key.split(',').map(Number);
+                            return { r, g, b, count };
+                        })
+                        .sort((a, b) => b.count - a.count);
+
+                    const dominantColors = [];
+                    for (const color of sorted) {
+                        if (dominantColors.length >= 5) break;
+                        const isDistinct = dominantColors.every(dc => {
+                            const dist = Math.sqrt((dc.r - color.r) ** 2 + (dc.g - color.g) ** 2 + (dc.b - color.b) ** 2);
+                            return dist > 45;
+                        });
+                        if (isDistinct || dominantColors.length === 0) {
+                            dominantColors.push(color);
+                        }
+                    }
+
+                    if (dominantColors.length < 5) {
+                        for (const color of sorted) {
+                            if (dominantColors.length >= 5) break;
+                            if (!dominantColors.some(dc => dc.r === color.r && dc.g === color.g && dc.b === color.b)) {
+                                dominantColors.push(color);
+                            }
+                        }
+                    }
+
+                    const hexColors = dominantColors.map(c => {
+                        const toHex = val => {
+                            const clamped = Math.max(0, Math.min(255, val));
+                            const hex = clamped.toString(16);
+                            return hex.length === 1 ? '0' + hex : hex;
+                        };
+                        return `#${toHex(c.r)}${toHex(c.g)}${toHex(c.b)}`.toUpperCase();
+                    });
+
+                    // Ensure we always have 5 colors
+                    while (hexColors.length < 5) {
+                        hexColors.push('#888888');
+                    }
+
+                    setExtractedPalette(hexColors);
+                } catch (err) {
+                    console.error('Canvas processing error:', err);
+                    setExtractedPalette(['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']);
+                }
+            };
+            img.onerror = () => {
+                console.error('Image loading failed for color extraction');
+                setExtractedPalette(['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']);
+            };
+        }
+    }, [activeImage]);
 
     // ── 初始拉取圖片 ──────────────────────────────
 
@@ -343,7 +443,23 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
 
 
-    const closeLightbox = () => setActiveImage(null);
+    // ensure toolbox resets when closing
+    const handleCloseLightbox = () => {
+        setToolboxOpen(false);
+        setActiveImage(null);
+    };
+
+    // ESC 鍵關閉工具箱（在燈箱開啟時有效）
+    useEffect(() => {
+        if (!activeImage) return;
+        const onKey = (e) => {
+            if (e.key === 'Escape' && toolboxOpen) {
+                setToolboxOpen(false);
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [activeImage, toolboxOpen]);
 
 
 
@@ -588,145 +704,62 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
             {/* 釘選對照畫布 */}
 
             {pinnedImages.length > 0 && (
-
                 <div style={{
-
                     backgroundColor: '#151515',
-
                     border: '1px dashed rgba(96,165,250,0.4)',
-
                     borderRadius: '12px',
-
                     padding: '12px 16px',
-
                     display: 'flex',
-
                     flexDirection: 'column',
-
                     gap: '10px',
-
                 }}>
-
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-
                         <span style={{ fontSize: '0.85rem', color: '#60a5fa', fontWeight: 'bold' }}>
-
-                            📌 {t('pinnedCanvas')}（{pinnedImages.length}）
-
+                            {t('pinnedCanvas')}（{pinnedImages.length}）
                         </span>
-
                         <div style={{ display: 'flex', gap: '8px' }}>
-
                             <button
-
                                 onClick={openCompareModal}
-
                                 style={{
-
                                     backgroundColor: '#2563eb',
-
                                     color: '#fff', border: 'none',
-
                                     borderRadius: '6px', padding: '4px 10px',
-
                                     fontSize: '0.75rem', cursor: 'pointer', fontWeight: 'bold',
-
                                 }}
-
                             >
-
                                 {t('multiCompare')}
-
                             </button>
-
                             <button
-
                                 onClick={() => setPinnedImages([])}
-
                                 style={{
-
                                     background: 'none', color: '#888',
-
                                     border: 'none', cursor: 'pointer',
-
                                     fontSize: '0.75rem', textDecoration: 'underline',
-
                                 }}
-
                             >
-
                                 {t('clear')}
-
                             </button>
-
                         </div>
-
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-
                         {pinnedImages.map(img => (
-
                             <div
-
                                 key={img.id}
-
-                                style={{
-
-                                    position: 'relative', flexShrink: 0,
-
-                                    width: '64px', height: '48px',
-
-                                    borderRadius: '6px', overflow: 'hidden', cursor: 'pointer',
-
-                                }}
-
+                                style={{ position: 'relative', flexShrink: 0, width: '64px', height: '48px', borderRadius: '6px', overflow: 'hidden', cursor: 'pointer' }}
                                 onClick={() => { setModalMode('single'); setActiveImage(img); }}
-
                             >
-
-                                <img
-
-                                    src={img.url}
-
-                                    alt="Pinned"
-
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-
-                                />
-
+                                <img src={img.url} alt="Pinned" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 <div
-
                                     onClick={e => { e.stopPropagation(); togglePin(img); }}
-
-                                    style={{
-
-                                        position: 'absolute', top: '2px', right: '2px',
-
-                                        backgroundColor: 'rgba(0,0,0,0.7)', color: '#f87171',
-
-                                        borderRadius: '50%', width: '16px', height: '16px',
-
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-
-                                        fontSize: '0.6rem', fontWeight: 'bold',
-
-                                    }}
-
+                                    style={{ position: 'absolute', top: '2px', right: '2px', backgroundColor: 'rgba(0,0,0,0.7)', color: '#f87171', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 'bold' }}
                                 >
-
-                                    ✕
-
+                                    ×
                                 </div>
-
                             </div>
-
                         ))}
-
                     </div>
-
                 </div>
-
             )}
 
 
@@ -743,7 +776,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                 }}>
 
-                    ❌ {error}
+                     {error}
 
                 </div>
 
@@ -779,7 +812,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
                                         marginBottom: '12px',
                                         display: 'inline-block',
                                         animation: 'spin 2s linear infinite'
-                                    }}>🎨</span>
+                                    }}></span>
                                     <span style={{
                                         fontSize: '0.95rem',
                                         color: currentTheme.text,
@@ -830,7 +863,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
 
 
-                                        {/* ❤️ 收藏按鈕（左上） */}
+                                        {/*  收藏按鈕（左上） */}
 
                                         {toggleFavorite && (
 
@@ -880,7 +913,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                                             >
 
-                                                {isLiked ? '❤️' : '🤍'}
+                                                {isLiked ? '' : ''}
 
                                             </button>
 
@@ -888,7 +921,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
 
 
-                                        {/* 📌 釘選按鈕（右上） */}
+                                        {/*  釘選按鈕（右上） */}
 
                                         <button
 
@@ -936,7 +969,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                                         >
 
-                                            📌
+                                            
 
                                         </button>
 
@@ -970,7 +1003,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                                         }}>
 
-                                            👤 {item.author}
+                                            {item.author}
 
                                         </div>
 
@@ -1098,7 +1131,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                     }}
 
-                    onClick={closeLightbox}
+                    onClick={handleCloseLightbox}
 
                 >
 
@@ -1110,7 +1143,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                             width: '100%',
 
-                            maxWidth: modalMode === 'compare' ? '1100px' : '860px',
+                            maxWidth: modalMode === 'compare' ? '1100px' : '1050px',
 
                             maxHeight: '92vh',
 
@@ -1144,7 +1177,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                         <button
 
-                            onClick={closeLightbox}
+                            onClick={handleCloseLightbox}
 
                             style={{
 
@@ -1184,7 +1217,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                         >
 
-                            ✕
+                            ×
 
                         </button>
 
@@ -1204,7 +1237,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                         }}>
 
-                            {modalMode === 'compare' ? '📌 多圖對照畫布' : '🖼️ 參考圖瀏覽'}
+                            {modalMode === 'compare' ? ' 多圖對照畫布' : ' 參考圖瀏覽'}
 
                         </h4>
 
@@ -1282,7 +1315,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                                         }}>
 
-                                            <span>👤 {img.author}</span>
+                                            <span> {img.author}</span>
 
                                             <button
 
@@ -1317,267 +1350,409 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
                         ) : (
 
                             // Single 模式
+                            <div className={`lightbox-container ${toolboxOpen ? 'toolbox-open' : ''}`}>
+                                <style>{`
+                                    .lightbox-container {
+                                        display: flex;
+                                        flex-direction: row;
+                                        width: 100%;
+                                        gap: 24px;
+                                        align-items: center;
+                                        position: relative;
+                                        min-width: 0;
+                                        max-height: 92vh;
+                                        overflow: hidden;
+                                    }
+                                    .lightbox-left {
+                                        flex: 1 1 100%;
+                                        display: flex;
+                                        flex-direction: column;
+                                        align-items: center;
+                                        position: relative;
+                                        border-radius: 14px;
+                                        overflow: hidden;
+                                        background-color: #0b0b0b;
+                                        justify-content: center;
+                                        min-height: 400px;
+                                        transition: width 420ms cubic-bezier(0.2,0.9,0.2,1), transform 420ms;
+                                        min-width: 0;
+                                        max-height: 65vh;
+                                        overflow: auto;
+                                    }
+                                    .lightbox-right {
+                                        position: relative;
+                                        flex: 0 0 0%;
+                                        opacity: 0;
+                                        transform: translateX(12px);
+                                        background-color: rgba(255, 255, 255, 0.03);
+                                        backdrop-filter: blur(16px);
+                                        -webkit-backdrop-filter: blur(16px);
+                                        border: 1px solid rgba(255, 255, 255, 0.08);
+                                        border-radius: 16px;
+                                        padding: 0;
+                                        display: flex;
+                                        flex-direction: column;
+                                        gap: 20px;
+                                        box-sizing: border-box;
+                                        box-shadow: inset 0 1px 1px rgba(255,255,255,0.1);
+                                        transition: width 420ms cubic-bezier(0.2,0.9,0.2,1), transform 420ms, opacity 320ms;
+                                        pointer-events: none;
+                                        overflow: hidden;
+                                        min-width: 0;
+                                        max-height: 65vh;
+                                        overflow: auto;
+                                    }
+                                    .lightbox-container.toolbox-open .lightbox-left {
+                                        flex: 0 0 70%;
+                                    }
+                                    .lightbox-container.toolbox-open .lightbox-right {
+                                        flex: 0 0 30%;
+                                        opacity: 1;
+                                        transform: translateX(0);
+                                        pointer-events: auto;
+                                        padding: 20px;
+                                    }
+                                    .lightbox-img {
+                                        width: 100%;
+                                        max-height: 65vh;
+                                        object-fit: contain;
+                                        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+                                        transition: transform 420ms cubic-bezier(0.2,0.9,0.2,1);
+                                    }
+                                    .color-block-wrapper {
+                                        display: flex;
+                                        flex-direction: column;
+                                        align-items: center;
+                                        flex: 1;
+                                        min-width: 0;
+                                    }
+                                    .color-block-square {
+                                        width: 100%;
+                                        aspect-ratio: 1/1;
+                                        border-radius: 8px;
+                                        border: 1px solid rgba(255, 255, 255, 0.12);
+                                        cursor: pointer;
+                                        transition: transform 0.2s, box-shadow 0.2s;
+                                        position: relative;
+                                    }
+                                    .color-block-square:hover {
+                                        transform: scale(1.08) translateY(-2px);
+                                        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                                    }
+                                    .nav-btn-hover {
+                                        background: rgba(0,0,0,0.4);
+                                        border: none;
+                                        color: #fff;
+                                        border-radius: 50%;
+                                        width: 44px;
+                                        height: 44px;
+                                        cursor: pointer;
+                                        font-size: 1.5rem;
+                                        display: flex;
+                                        align-items: center;
+                                        justifyContent: center;
+                                        transition: background 0.2s, transform 0.2s;
+                                        position: absolute;
+                                        top: 50%;
+                                        transform: translateY(-50%);
+                                        z-index: 10;
+                                    }
+                                    .nav-btn-hover:hover {
+                                        background: rgba(0,0,0,0.7);
+                                        transform: translateY(-50%) scale(1.08);
+                                    }
+                                    .toolbox-toggle-button {
+                                        position: fixed;
+                                        right: 28px;
+                                        bottom: 28px;
+                                        background: rgba(0,0,0,0.45);
+                                        color: #fff;
+                                        border-radius: 10px;
+                                        padding: 10px 12px;
+                                        cursor: pointer;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 8px;
+                                        box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+                                        transition: transform 0.18s, background 0.18s, opacity 0.18s;
+                                        z-index: 20;
+                                        backdrop-filter: blur(6px);
+                                    }
+                                    .toolbox-toggle-button:hover { background: rgba(0,0,0,0.72); transform: scale(1.04); }
+                                    .toolbox-right .collapse-btn {
+                                        position: absolute;
+                                        top: 12px;
+                                        right: 12px;
+                                        background: rgba(255,255,255,0.04);
+                                        border: none;
+                                        color: #fff;
+                                        width: 28px;
+                                        height: 28px;
+                                        border-radius: 6px;
+                                        cursor: pointer;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        outline: none;
+                                    }
+                                    @media (max-width: 768px) {
+                                        .lightbox-container {
+                                            flex-direction: column;
+                                        }
+                                        .lightbox-left {
+                                            width: 100%;
+                                            min-height: 280px;
+                                        }
+                                        .lightbox-right {
+                                            width: 100%;
+                                            opacity: 1;
+                                            transform: none;
+                                            pointer-events: auto;
+                                            margin-top: 16px;
+                                        }
+                                    }
+                                `}</style>
 
-                            <div style={{
+                                {/* Floating toggle button (corner) */}
+                                <button
+                                    className="toolbox-toggle-button"
+                                    title="開啟/收合 繪師工具箱"
+                                    onClick={(e) => { e.stopPropagation(); setToolboxOpen(prev => !prev); }}
+                                >
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>工具箱</span>
+                                </button>
 
-                                display: 'flex',
-
-                                flexDirection: 'column',
-
-                                alignItems: 'center',
-
-                                width: '100%',
-
-                            }}>
-
-                                <div style={{
-
-                                    display: 'flex',
-
-                                    alignItems: 'center',
-
-                                    justifyContent: 'space-between',
-
-                                    width: '100%',
-
-                                    minHeight: '320px',
-
-                                }}>
-
-                                    {/* 上一張 */}
-
+                                {/* Left Column: Preview Panel */}
+                                <div className="lightbox-left">
                                     <button
-
                                         onClick={handlePrev}
-
-                                        style={{
-
-                                            background: 'rgba(0,0,0,0.5)', border: 'none',
-
-                                            color: '#fff', borderRadius: '50%',
-
-                                            width: '42px', height: '42px',
-
-                                            cursor: 'pointer', fontSize: '1.4rem',
-
-                                            zIndex: 10, flexShrink: 0,
-
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-
-                                        }}
-
+                                        className="nav-btn-hover"
+                                        style={{ left: '16px' }}
                                     >
-
                                         ‹
-
                                     </button>
-
-
 
                                     <img
-
                                         src={activeImage.url}
-
                                         alt={activeImage.title || activeImage.author}
-
+                                        className="lightbox-img"
                                         style={{
-
-                                            maxWidth: 'calc(100% - 110px)',
-
-                                            maxHeight: '62vh',
-
-                                            borderRadius: '10px',
-
-                                            objectFit: 'contain',
-
-                                            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-
-                                            flexGrow: 1,
-
+                                            filter: isGrayscale ? 'grayscale(100%)' : 'none',
+                                            transition: 'filter 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                                         }}
-
                                     />
 
-
-
-                                    {/* 下一張 */}
-
                                     <button
-
                                         onClick={handleNext}
-
-                                        style={{
-
-                                            background: 'rgba(0,0,0,0.5)', border: 'none',
-
-                                            color: '#fff', borderRadius: '50%',
-
-                                            width: '42px', height: '42px',
-
-                                            cursor: 'pointer', fontSize: '1.4rem',
-
-                                            zIndex: 10, flexShrink: 0,
-
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-
-                                        }}
-
+                                        className="nav-btn-hover"
+                                        style={{ right: '16px' }}
                                     >
-
                                         ›
-
                                     </button>
-
                                 </div>
 
-
-
-                                {/* 底部操作列 */}
-
-                                <div style={{
-
-                                    marginTop: '18px',
-
-                                    display: 'flex',
-
-                                    justifyContent: 'space-between',
-
-                                    alignItems: 'center',
-
-                                    width: '100%',
-
-                                    borderTop: '1px solid rgba(255,255,255,0.07)',
-
-                                    paddingTop: '16px',
-
-                                    gap: '10px',
-
-                                }}>
-
-                                    <span style={{ color: '#aaa', fontSize: '0.88rem' }}>
-
-                                        👤 {activeImage.author}
-
-                                    </span>
-
-
-
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-
-                                        {/* 收藏按鈕 */}
-
-                                        {toggleFavorite && (() => {
-
-                                            const isLiked = savedImages.some(
-
-                                                p => String(p.id) === String(activeImage.id)
-
-                                            );
-
-                                            return (
-
-                                                <button
-
-                                                    onClick={() => toggleFavorite({
-
-                                                        id: activeImage.id,
-
-                                                        author: activeImage.author,
-
-                                                        url: activeImage.url,
-
-                                                        isCustom: false,
-
-                                                    })}
-
-                                                    style={{
-
-                                                        backgroundColor: isLiked ? 'rgba(251,113,133,0.15)' : 'rgba(255,255,255,0.05)',
-
-                                                        color: isLiked ? '#fb7185' : '#fff',
-
-                                                        border: isLiked ? '1px solid #fb7185' : '1px solid rgba(255,255,255,0.15)',
-
-                                                        borderRadius: '9px',
-
-                                                        padding: '8px 16px',
-
-                                                        fontSize: '0.85rem',
-
-                                                        cursor: 'pointer',
-
-                                                        fontWeight: 'bold',
-
-                                                        transition: 'all 0.2s ease',
-
-                                                        display: 'flex',
-
-                                                        alignItems: 'center',
-
-                                                        gap: '5px',
-
-                                                        outline: 'none',
-
-                                                    }}
-
-                                                >
-
-                                                    {isLiked ? '❤️ 已收藏' : '🤍 收藏'}
-
-                                                </button>
-
-                                            );
-
-                                        })()}
-
-
-
-                                        {/* 釘選按鈕 */}
-
-                                        <button
-
-                                            onClick={() => togglePin(activeImage)}
-
-                                            style={{
-
-                                                backgroundColor: pinnedImages.some(p => p.id === activeImage.id)
-
-                                                    ? '#ef4444' : '#2563eb',
-
-                                                color: '#fff',
-
-                                                border: 'none',
-
-                                                borderRadius: '9px',
-
-                                                padding: '8px 16px',
-
-                                                fontSize: '0.85rem',
-
-                                                cursor: 'pointer',
-
-                                                fontWeight: 'bold',
-
-                                                transition: 'background 0.2s',
-
-                                                outline: 'none',
-
-                                            }}
-
-                                        >
-
-                                            {pinnedImages.some(p => p.id === activeImage.id)
-
-                                                ? '📌 取消釘選'
-
-                                                : '📌 釘選對照'}
-
-                                        </button>
-
+                                {/* Right Column: Frosted Glass Artist Toolbox */}
+                                <div className="lightbox-right toolbox-right">
+                                    <button className="collapse-btn" onClick={(e) => { e.stopPropagation(); setToolboxOpen(false); }} title="收合工具箱">×</button>
+                                    {/* Header */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        
+                                        <h3 style={{ margin: 0, color: '#fff', fontSize: '1.05rem', fontWeight: '700', letterSpacing: '0.5px' }}>
+                                            ARTIST TOOLBOX
+                                        </h3>
                                     </div>
 
-                                </div>
+                                    {/* Author Info */}
+                                    <div style={{
+                                        fontSize: '0.82rem',
+                                        color: '#bbb',
+                                        backgroundColor: 'rgba(255,255,255,0.02)',
+                                        padding: '10px 14px',
+                                        borderRadius: '10px',
+                                        border: '1px solid rgba(255,255,255,0.05)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}>
+                                        <span>{t('referenceSource')}</span>
+                                        <strong style={{ color: '#fff' }}>{activeImage.author}</strong>
+                                    </div>
 
+                                    {/* Color Extractor Section */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ fontSize: '0.9rem' }}></span>
+                                            <span style={{ fontSize: '0.88rem', fontWeight: '600', color: '#eee' }}>色彩分析調色盤</span>
+                                        </div>
+                                        
+                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', width: '100%', marginTop: '4px' }}>
+                                            {extractedPalette.length > 0 ? (
+                                                extractedPalette.map((hex, idx) => (
+                                                    <div key={`palette-${idx}`} className="color-block-wrapper">
+                                                        <div
+                                                            className="color-block-square"
+                                                            style={{ backgroundColor: hex }}
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(hex);
+                                                                setCopiedColorIndex(idx);
+                                                                setTimeout(() => setCopiedColorIndex(null), 1500);
+                                                            }}
+                                                        >
+                                                            {copiedColorIndex === idx && (
+                                                                <div style={{
+                                                                    position: 'absolute',
+                                                                    top: '-32px',
+                                                                    left: '50%',
+                                                                    transform: 'translateX(-50%)',
+                                                                    backgroundColor: '#10b981',
+                                                                    color: '#fff',
+                                                                    padding: '3px 6px',
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '0.68rem',
+                                                                    fontWeight: 'bold',
+                                                                    whiteSpace: 'nowrap',
+                                                                    boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                                                                    zIndex: 99
+                                                                }}>
+                                                                    已複製
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <span style={{
+                                                            fontSize: '0.65rem',
+                                                            color: '#aaa',
+                                                            marginTop: '6px',
+                                                            fontFamily: 'monospace',
+                                                            letterSpacing: '-0.3px',
+                                                            whiteSpace: 'nowrap'
+                                                        }}>
+                                                            {hex}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div style={{ fontSize: '0.78rem', color: '#777', width: '100%', textAlign: 'center', padding: '8px 0' }}>
+                                                    正在分析色彩分析調色盤...
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Grayscale Toggle Section */}
+                                    <div style={{
+                                        backgroundColor: 'rgba(255,255,255,0.02)',
+                                        padding: '12px 14px',
+                                        borderRadius: '12px',
+                                        border: '1px solid rgba(255,255,255,0.05)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '8px'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                            <span style={{ fontSize: '0.85rem', color: '#eee', fontWeight: '600' }}>
+                                                關閉色彩 - 明度模式
+                                            </span>
+                                            <label className="switch" style={{
+                                                position: 'relative',
+                                                display: 'inline-block',
+                                                width: '42px',
+                                                height: '22px'
+                                            }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isGrayscale}
+                                                    onChange={(e) => setIsGrayscale(e.target.checked)}
+                                                    style={{ opacity: 0, width: 0, height: 0 }}
+                                                />
+                                                <span style={{
+                                                    position: 'absolute',
+                                                    cursor: 'pointer',
+                                                    top: 0, left: 0, right: 0, bottom: 0,
+                                                    backgroundColor: isGrayscale ? '#3b82f6' : '#444',
+                                                    transition: '0.2s',
+                                                    borderRadius: '22px'
+                                                }}>
+                                                    <span style={{
+                                                        position: 'absolute',
+                                                        content: '""',
+                                                        height: '16px',
+                                                        width: '16px',
+                                                        left: isGrayscale ? '23px' : '3px',
+                                                        bottom: '3px',
+                                                        backgroundColor: '#fff',
+                                                        transition: '0.2s',
+                                                        borderRadius: '50%',
+                                                        boxShadow: '0 1px 3px rgba(0,0,0,0.4)'
+                                                    }} />
+                                                </span>
+                                            </label>
+                                        </div>
+                                        <span style={{ fontSize: '0.72rem', color: '#888', lineHeight: '1.4' }}>
+                                            過濾色彩以呈現明暗灰階，便於學習大師的光影明度結構與明暗對比關係。
+                                        </span>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: 'auto' }}>
+                                        {/* 收藏按鈕 */}
+                                        {toggleFavorite && (() => {
+                                            const isLiked = savedImages.some(p => String(p.id) === String(activeImage.id));
+                                            return (
+                                                <button
+                                                    onClick={() => toggleFavorite({
+                                                        id: activeImage.id,
+                                                        author: activeImage.author,
+                                                        url: activeImage.url,
+                                                        isCustom: false,
+                                                    })}
+                                                    style={{
+                                                        width: '100%',
+                                                        backgroundColor: isLiked ? 'rgba(251,113,133,0.15)' : 'rgba(255,255,255,0.04)',
+                                                        color: isLiked ? '#fb7185' : '#fff',
+                                                        border: isLiked ? '1px solid #fb7185' : '1px solid rgba(255,255,255,0.12)',
+                                                        borderRadius: '10px',
+                                                        padding: '10px 16px',
+                                                        fontSize: '0.85rem',
+                                                        cursor: 'pointer',
+                                                        fontWeight: 'bold',
+                                                        transition: 'all 0.2s ease',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        gap: '6px',
+                                                        outline: 'none',
+                                                    }}
+                                                >
+                                                    {isLiked ? ' 已收藏圖片' : ' 收藏圖片'}
+                                                </button>
+                                            );
+                                        })()}
+
+                                        {/* 釘選按鈕 */}
+                                        <button
+                                            onClick={() => togglePin(activeImage)}
+                                            style={{
+                                                width: '100%',
+                                                backgroundColor: pinnedImages.some(p => p.id === activeImage.id) ? 'rgba(239, 68, 68, 0.15)' : 'rgba(37, 99, 235, 0.15)',
+                                                color: pinnedImages.some(p => p.id === activeImage.id) ? '#ef4444' : '#60a5fa',
+                                                border: pinnedImages.some(p => p.id === activeImage.id) ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(37, 99, 235, 0.3)',
+                                                borderRadius: '10px',
+                                                padding: '10px 16px',
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
+                                                fontWeight: 'bold',
+                                                transition: 'all 0.2s ease',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '6px',
+                                                outline: 'none',
+                                            }}
+                                        >
+                                            {pinnedImages.some(p => p.id === activeImage.id) ? ' 取消釘選' : ' 釘選到對照畫布'}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                         )}

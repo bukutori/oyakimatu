@@ -47,6 +47,28 @@ app.use('/api/images', require('./routes/images'));
 app.use('/api/posts', require('./routes/posts'));
 app.use('/api/notifications', require('./routes/notifications'));
 
+// ── Online Counter ─────────────────────────────────
+const activeSessions = new Map();
+app.get('/api/online-count', (req, res) => {
+  try {
+    const sessionId = req.query.sessionId || req.ip;
+    activeSessions.set(sessionId, Date.now());
+
+    // Clean up inactive sessions (older than 45 seconds)
+    const now = Date.now();
+    for (const [id, lastSeen] of activeSessions.entries()) {
+      if (now - lastSeen > 45000) {
+        activeSessions.delete(id);
+      }
+    }
+
+    res.json({ success: true, count: activeSessions.size });
+  } catch (err) {
+    console.error('[GET /api/online-count] Error:', err);
+    res.status(500).json({ success: false, message: '伺服器發生錯誤' });
+  }
+});
+
 // ── Favorites API (MongoDB) ─────────────────────
 const Favorite = require('./models/Favorite');
 const Message = require('./models/Message');

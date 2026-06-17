@@ -406,7 +406,7 @@ function InspirationGenerator({ theme = 'dark', language = 'zh' }) {
             `}</style>
 
             <h3 style={headerStyle}>
-                <span>🔮</span> {t('inspirationLottery')}
+                <span></span> {t('inspirationLottery')}
             </h3>
 
             {/* Tabs */}
@@ -417,7 +417,7 @@ function InspirationGenerator({ theme = 'dark', language = 'zh' }) {
                     onMouseEnter={() => setHoveredEl('tab-text')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    📝 {t('textChallenge')}
+                     {t('textChallenge')}
                 </button>
                 <button
                     style={getTabStyle('image')}
@@ -425,7 +425,7 @@ function InspirationGenerator({ theme = 'dark', language = 'zh' }) {
                     onMouseEnter={() => setHoveredEl('tab-image')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    🖼️ {t('imageChallenge')}
+                     {t('imageChallenge')}
                 </button>
             </div>
 
@@ -470,7 +470,7 @@ function InspirationGenerator({ theme = 'dark', language = 'zh' }) {
                         </div>
                     ) : (
                         <div style={{ textAlign: 'center', color: currentTheme.text === '#e0e0e0' ? '#666' : '#6b7280' }}>
-                            <span style={{ fontSize: '2rem', display: 'block', marginBottom: '10px' }}>⚡</span>
+                            <span style={{ fontSize: '2rem', display: 'block', marginBottom: '10px' }}></span>
                             <p style={{ margin: '0', fontSize: '0.95rem', color: currentTheme.text }}>{t('clickToSummon')}</p>
                         </div>
                     )
@@ -489,7 +489,7 @@ function InspirationGenerator({ theme = 'dark', language = 'zh' }) {
                                     zIndex: 2,
                                     borderRadius: '8px'
                                 }}>
-                                    <span style={{ fontSize: '1.5rem', marginBottom: '8px', display: 'inline-block', animation: 'spin 1.5s linear infinite' }}>🌀</span>
+                                    <span style={{ fontSize: '1.5rem', marginBottom: '8px', display: 'inline-block', animation: 'spin 1.5s linear infinite' }}></span>
                                     <span style={{ fontSize: '0.85rem', color: '#a78bfa' }}>{t('inspirationTransferring')}</span>
                                 </div>
                             )}
@@ -517,7 +517,7 @@ function InspirationGenerator({ theme = 'dark', language = 'zh' }) {
                         </div>
                     ) : (
                         <div style={{ textAlign: 'center', color: '#666' }}>
-                            <span style={{ fontSize: '2rem', display: 'block', marginBottom: '10px' }}>🎨</span>
+                            <span style={{ fontSize: '2rem', display: 'block', marginBottom: '10px' }}></span>
                             <p style={{ margin: '0', fontSize: '0.95rem' }}>{t('clickToDraw')}</p>
                         </div>
                     )
@@ -582,7 +582,7 @@ function InspirationGenerator({ theme = 'dark', language = 'zh' }) {
                             onMouseEnter={e => e.currentTarget.style.color = '#a78bfa'}
                             onMouseLeave={e => e.currentTarget.style.color = '#fff'}
                         >
-                            ✕
+                            
                         </button>
 
                         {/* Enlarged Image */}

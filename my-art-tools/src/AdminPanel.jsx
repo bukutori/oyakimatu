@@ -148,7 +148,7 @@ function AdminPanel({ token, theme = 'dark', language = 'zh', onClose }) {
             onMouseOver={(e) => e.target.style.opacity = '0.7'}
             onMouseOut={(e) => e.target.style.opacity = '1'}
           >
-            ✕
+            
           </button>
         )}
       </div>
@@ -175,7 +175,7 @@ function AdminPanel({ token, theme = 'dark', language = 'zh', onClose }) {
           borderRadius: '8px',
           fontSize: '0.85rem'
         }}>
-          <div>Token: {token ? '✅ 已提供' : '❌ 未提供'}</div>
+          <div>Token: {token ? ' 已提供' : ' 未提供'}</div>
           <div>API_BASE: {API_BASE}</div>
           <div>Active Tab: {activeTab}</div>
         </div>

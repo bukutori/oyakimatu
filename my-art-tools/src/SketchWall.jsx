@@ -51,6 +51,13 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
     const [modalTimerActive, setModalTimerActive] = useState(false);
     const modalTimerRef = useRef(null);
 
+    // Toolbox states for modal (lightbox) —— 新增以支援工具箱功能
+    const [toolboxOpen, setToolboxOpen] = useState(false);
+    const [extractedPalette, setExtractedPalette] = useState([]);
+    const [isGrayscale, setIsGrayscale] = useState(false);
+    const [copiedColorIndex, setCopiedColorIndex] = useState(null);
+    const paletteCanvasRef = useRef(null);
+
     // Practice Mode: 'random' (system gallery) or 'custom' (user custom images)
     const [practiceMode, setPracticeMode] = useState('random');
     const [customImages, setCustomImages] = useState([]);
@@ -144,13 +151,84 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
         };
     }, [modalTimerActive, modalTimer]);
 
-    // Reset modal timer when modal opens/closes
+    // NOTE: 不在開燈箱時重設 modal 計時器（保留原本 modal 計時器行為）
+
+    // 如果 modal 尚未設定計時（初次開啟），初始化為目前的 duration（但若已有值則不覆蓋）
     useEffect(() => {
-        if (showImageModal) {
+        if (showImageModal && modalTimer === 0) {
             setModalTimer(duration);
-            setModalTimerActive(false);
+            // 開燈箱時自動啟動 modal 計時器（僅在尚未設定時）
+            setModalTimerActive(true);
         }
-    }, [showImageModal, duration]);
+    }, [showImageModal, modalTimer, duration]);
+
+    // ESC 鍵在模態開啟時關閉工具箱
+    useEffect(() => {
+        if (!showImageModal) return;
+        const onKey = (e) => {
+            if (e.key === 'Escape' && toolboxOpen) {
+                setToolboxOpen(false);
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [showImageModal, toolboxOpen]);
+
+    // Helper: convert rgb to hex
+    const rgbToHex = (r, g, b) => {
+        const toHex = (n) => n.toString(16).padStart(2, '0');
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+    };
+
+    // Extract a simple palette from the image using a small canvas
+    useEffect(() => {
+        if (!showImageModal || !currentImage) return;
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.src = currentImage.url;
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                const w = 120, h = 120;
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const data = ctx.getImageData(0, 0, w, h).data;
+                const map = new Map();
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i], g = data[i+1], b = data[i+2];
+                    // Reduce color space to buckets of 16 to group similar colors
+                    const key = `${Math.round(r/16)*16},${Math.round(g/16)*16},${Math.round(b/16)*16}`;
+                    map.set(key, (map.get(key) || 0) + 1);
+                }
+                const sorted = Array.from(map.entries()).sort((a,b) => b[1] - a[1]);
+                const top = sorted.slice(0, 6).map(([k]) => {
+                    const [r,g,b] = k.split(',').map(n => parseInt(n,10));
+                    return rgbToHex(r,g,b);
+                });
+                setExtractedPalette(top);
+            } catch (err) {
+                console.warn('palette extract failed', err);
+                setExtractedPalette([]);
+            }
+        };
+        img.onerror = () => setExtractedPalette([]);
+    }, [showImageModal, currentImage]);
+
+    // Copy hex to clipboard with small UI feedback
+    const handleCopyHex = async (hex, idx) => {
+        try {
+            await navigator.clipboard.writeText(hex);
+            setCopiedColorIndex(idx);
+            setTimeout(() => setCopiedColorIndex(null), 1600);
+        } catch (err) {
+            console.warn('clipboard write failed', err);
+            // fallback: select prompt
+            setCopiedColorIndex(idx);
+            setTimeout(() => setCopiedColorIndex(null), 1600);
+        }
+    };
 
     // Handle local file upload
     const handleLocalUpload = (e) => {
@@ -470,7 +548,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
             `}</style>
 
             <h3 style={headerStyle}>
-                <span>⏱️</span> {t('sketchTimerWall')}
+                {t('sketchTimerWall')}
             </h3>
 
             {/* Mode Switcher */}
@@ -481,7 +559,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                     onMouseEnter={() => setHoveredEl('mode-random')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    🎲 {t('randomGallery')}
+                    {t('randomGallery')}
                 </button>
                 <button
                     style={getModeBtnStyle('custom')}
@@ -489,7 +567,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                     onMouseEnter={() => setHoveredEl('mode-custom')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    📁 {t('customImages')}
+                    {t('customImages')}
                 </button>
             </div>
 
@@ -501,7 +579,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                     onMouseEnter={() => setHoveredEl('dur-60')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    ⏱️ 60 {t('secondsSketch')}
+                    60 {t('secondsSketch')}
                 </button>
                 <button
                     style={getDurationBtnStyle(180)}
@@ -509,7 +587,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                     onMouseEnter={() => setHoveredEl('dur-180')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    ⏱️ 3 {t('minutesSketch')}
+                    3 {t('minutesSketch')}
                 </button>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <input
@@ -583,7 +661,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                     {formatTime(timeLeft)}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: isLight ? '#6b7280' : '#888', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    {isActive ? '⏳ ' + t('timing') : '⏸️ ' + t('paused')}
+                    {isActive ? t('timing') : t('paused')}
                 </span>
                 {/* Horizontal Progress Bar */}
                 <div style={progressBarStyle} />
@@ -593,7 +671,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
             <div style={imageAreaStyle}>
                 {practiceMode === 'custom' && customImages.length === 0 ? (
                     <div style={{ textAlign: 'center', color: isLight ? '#6b7280' : '#666', padding: '20px' }}>
-                        <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '10px' }}>📁</span>
+                        <span style={{ display: 'block', marginBottom: '10px' }}></span>
                         <p style={{ margin: '0 0 6px 0', fontSize: '0.95rem', color: isLight ? '#6b7280' : '#8c8c8c' }}>{t('noCustomImages')}</p>
                         <p style={{ margin: '0', fontSize: '0.8rem', color: isLight ? '#6b7280' : '#555' }}>{t('uploadOrPaste')}</p>
                     </div>
@@ -604,7 +682,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                             marginBottom: '10px',
                             display: 'inline-block',
                             animation: 'spin 2s linear infinite'
-                        }}>🎨</span>
+                        }}></span>
                         <span style={{
                             fontSize: '0.88rem',
                             color: isLight ? '#3b82f6' : '#fb7185',
@@ -639,7 +717,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                                 style={fitToggleStyle}
                                 title={t('toggleFitMode')}
                             >
-                                ⛶ {fitMode === 'contain' ? t('fill') : t('full')}
+                                 {fitMode === 'contain' ? t('fill') : t('full')}
                             </button>
                             {/* Favorite Button overlay */}
                             {toggleFavorite && (
@@ -674,7 +752,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                                     }}
                                     title={savedImages.some(item => String(item.id) === String(currentImage.id)) ? t('unfavorite') : t('favorite')}
                                 >
-                                    {savedImages.some(item => String(item.id) === String(currentImage.id)) ? '❤️' : '🤍'}
+                                    {savedImages.some(item => String(item.id) === String(currentImage.id)) ? '' : ''}
                                 </button>
                             )}
                             <img
@@ -737,7 +815,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                         onMouseEnter={() => setHoveredEl('custom-upload')}
                         onMouseLeave={() => setHoveredEl(null)}
                     >
-                        📁 {t('selectLocalImages')}
+                        {t('selectLocalImages')}
                         <input
                             type="file"
                             multiple
@@ -792,7 +870,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                     onMouseEnter={() => setHoveredEl('ctrl-play-pause')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    {isActive ? '⏸ ' + t('pause') : '▶ ' + t('continue')}
+                    {isActive ? t('pause') : t('continue')}
                 </button>
                 <button
                     style={getControlBtnStyle('reset')}
@@ -800,7 +878,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                     onMouseEnter={() => setHoveredEl('ctrl-reset')}
                     onMouseLeave={() => setHoveredEl(null)}
                 >
-                    🔄 {t('reset')}
+                    {t('reset')}
                 </button>
                 <button
                     style={getControlBtnStyle('skip')}
@@ -842,6 +920,7 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                             borderRadius: '16px',
                             padding: '20px',
                             boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
+                            overflow: 'hidden'
                         }}
                         onClick={e => e.stopPropagation()}
                     >
@@ -864,16 +943,20 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                             onMouseEnter={e => e.currentTarget.style.color = isLight ? '#3b82f6' : '#fb7185'}
                             onMouseLeave={e => e.currentTarget.style.color = '#fff'}
                         >
-                            ✕
+                            ×
                         </button>
 
-                        {/* Left: Image Display (70-80%) */}
+                        
+
+                        {/* Left: Image Display */}
                         <div style={{
                             flex: '1',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             minHeight: '400px',
+                            transition: 'transform 240ms ease',
+                            transform: (toolboxOpen && window.innerWidth >= 768) ? 'scale(0.72)' : 'scale(1)'
                         }}>
                             <img
                                 src={currentImage.url}
@@ -884,151 +967,114 @@ function SketchWall({ savedImages = [], toggleFavorite, theme = 'dark', language
                                     borderRadius: '12px',
                                     objectFit: 'contain',
                                     boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+                                    transition: 'transform 240ms ease, filter 240ms ease',
+                                    transform: 'none',
+                                    filter: isGrayscale ? 'grayscale(1) brightness(0.9)' : 'none'
                                 }}
                             />
                         </div>
 
-                        {/* Right: Sidebar Control Panel (20-30%) */}
+                        {/* Right: Timer Panel (always visible) */}
                         <div style={{
                             width: window.innerWidth < 768 ? '100%' : '280px',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '20px',
+                            gap: '12px',
                             padding: '10px',
-                            borderLeft: window.innerWidth < 768 ? 'none' : `1px solid ${currentTheme.border}`,
-                            borderTop: window.innerWidth < 768 ? `1px solid ${currentTheme.border}` : 'none',
+                            borderLeft: window.innerWidth < 768 ? `1px solid ${currentTheme.border}` : `1px solid ${currentTheme.border}`,
+                            borderTop: window.innerWidth < 768 ? 'none' : 'none',
                         }}>
-                            {/* Timer Display */}
+                            {/* Timer Display (always shown on modal) */}
                             <div style={{
                                 textAlign: 'center',
-                                padding: '20px',
-                                backgroundColor: isLight ? 'rgba(59, 130, 246, 0.1)' : 'rgba(251, 113, 133, 0.1)',
+                                padding: '12px',
+                                backgroundColor: isLight ? 'rgba(59, 130, 246, 0.06)' : 'rgba(251, 113, 133, 0.06)',
                                 borderRadius: '12px',
-                                border: `1px solid ${isLight ? 'rgba(59, 130, 246, 0.3)' : 'rgba(251, 113, 133, 0.3)'}`,
+                                border: `1px solid ${isLight ? 'rgba(59, 130, 246, 0.12)' : 'rgba(251, 113, 133, 0.12)'}`,
                             }}>
                                 <div style={{
-                                    fontSize: '3rem',
+                                    fontSize: '2.4rem',
                                     fontWeight: 'bold',
                                     color: isLight ? '#3b82f6' : '#fb7185',
                                     fontFamily: 'monospace',
                                     lineHeight: '1',
-                                    marginBottom: '8px',
+                                    marginBottom: '6px',
                                 }}>
                                     {Math.floor(modalTimer / 60).toString().padStart(2, '0')}:{(modalTimer % 60).toString().padStart(2, '0')}
                                 </div>
-                                <div style={{
-                                    fontSize: '0.85rem',
-                                    color: isLight ? '#6b7280' : '#888',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '1px',
-                                }}>
-                                    {modalTimerActive ? '⏳ ' + t('timing') : '⏸️ ' + t('paused')}
+                                <div style={{ fontSize: '0.82rem', color: isLight ? '#6b7280' : '#888' }}>{modalTimerActive ? t('timing') : t('paused')}</div>
+                            </div>
+
+                            {/* Controls */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button onClick={handleModalTimerStart} disabled={modalTimerActive} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: modalTimerActive ? '#666' : (isLight ? '#3b82f6' : '#fb7185'), color: '#fff', fontWeight: '700' }}>{t('continue')}</button>
+                                    <button onClick={handleModalTimerPause} disabled={!modalTimerActive} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, background: !modalTimerActive ? '#444' : (isLight ? '#f59e0b' : '#fbbf24'), color: '#fff', fontWeight: '700' }}>{t('pause')}</button>
                                 </div>
-                            </div>
+                                <button onClick={handleModalTimerReset} style={{ padding: '10px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, background: currentTheme.cardBg, color: currentTheme.text }}>{t('reset')}</button>
 
-                            {/* Control Buttons */}
-                            <div style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '12px',
-                            }}>
-                                <button
-                                    onClick={handleModalTimerStart}
-                                    disabled={modalTimerActive}
-                                    style={{
-                                        padding: '14px',
-                                        borderRadius: '10px',
-                                        border: 'none',
-                                        backgroundColor: modalTimerActive
-                                            ? (isLight ? '#e5e7eb' : '#374151')
-                                            : (isLight ? '#3b82f6' : '#fb7185'),
-                                        color: modalTimerActive ? (isLight ? '#9ca3af' : '#6b7280') : '#ffffff',
-                                        fontWeight: 'bold',
-                                        fontSize: '1rem',
-                                        cursor: modalTimerActive ? 'not-allowed' : 'pointer',
-                                        transition: 'all 0.2s ease',
-                                        boxShadow: modalTimerActive ? 'none' : (isLight ? '0 4px 12px rgba(59, 130, 246, 0.3)' : '0 4px 12px rgba(251, 113, 133, 0.3)'),
-                                    }}
-                                    onMouseEnter={e => {
-                                        if (!modalTimerActive) {
-                                            e.currentTarget.style.transform = 'translateY(-2px)';
-                                            e.currentTarget.style.boxShadow = isLight ? '0 6px 16px rgba(59, 130, 246, 0.4)' : '0 6px 16px rgba(251, 113, 133, 0.4)';
-                                        }
-                                    }}
-                                    onMouseLeave={e => {
-                                        if (!modalTimerActive) {
-                                            e.currentTarget.style.transform = 'translateY(0)';
-                                            e.currentTarget.style.boxShadow = isLight ? '0 4px 12px rgba(59, 130, 246, 0.3)' : '0 4px 12px rgba(251, 113, 133, 0.3)';
-                                        }
-                                    }}
-                                >
-                                    ▶ {t('continue')}
-                                </button>
-                                <button
-                                    onClick={handleModalTimerPause}
-                                    disabled={!modalTimerActive}
-                                    style={{
-                                        padding: '14px',
-                                        borderRadius: '10px',
-                                        border: `1px solid ${currentTheme.border}`,
-                                        backgroundColor: !modalTimerActive
-                                            ? (isLight ? '#e5e7eb' : '#374151')
-                                            : (isLight ? '#f59e0b' : '#fbbf24'),
-                                        color: !modalTimerActive ? (isLight ? '#9ca3af' : '#6b7280') : '#ffffff',
-                                        fontWeight: 'bold',
-                                        fontSize: '1rem',
-                                        cursor: !modalTimerActive ? 'not-allowed' : 'pointer',
-                                        transition: 'all 0.2s ease',
-                                    }}
-                                    onMouseEnter={e => {
-                                        if (modalTimerActive) {
-                                            e.currentTarget.style.transform = 'translateY(-2px)';
-                                        }
-                                    }}
-                                    onMouseLeave={e => {
-                                        if (modalTimerActive) {
-                                            e.currentTarget.style.transform = 'translateY(0)';
-                                        }
-                                    }}
-                                >
-                                    ⏸ {t('pause')}
-                                </button>
-                                <button
-                                    onClick={handleModalTimerReset}
-                                    style={{
-                                        padding: '14px',
-                                        borderRadius: '10px',
-                                        border: `1px solid ${currentTheme.border}`,
-                                        backgroundColor: currentTheme.cardBg,
-                                        color: currentTheme.text,
-                                        fontWeight: 'bold',
-                                        fontSize: '1rem',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease',
-                                    }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.backgroundColor = isLight ? '#e5e7eb' : '#374151';
-                                        e.currentTarget.style.transform = 'translateY(-2px)';
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.backgroundColor = currentTheme.cardBg;
-                                        e.currentTarget.style.transform = 'translateY(0)';
-                                    }}
-                                >
-                                    🔄 {t('reset')}
+                                <button onClick={(e) => { e.stopPropagation(); setToolboxOpen(prev => !prev); }} aria-pressed={toolboxOpen} style={{ marginTop: '6px', padding: '10px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, background: toolboxOpen ? (isLight ? 'rgba(59,130,246,0.95)' : 'rgba(251,113,133,0.95)') : currentTheme.cardBg, color: toolboxOpen ? '#fff' : currentTheme.text, fontWeight: '700', cursor: 'pointer' }}>
+                                    {toolboxOpen ? t('close') : t('toolbox')}
                                 </button>
                             </div>
 
-                            {/* Hint */}
-                            <div style={{
-                                marginTop: 'auto',
-                                textAlign: 'center',
-                                color: isLight ? '#6b7280' : '#888',
-                                fontSize: '0.8rem',
-                                lineHeight: '1.5',
-                            }}>
-                                {t('clickToClose')}
+                            <div style={{ marginTop: 'auto', textAlign: 'center', color: isLight ? '#6b7280' : '#888', fontSize: '0.8rem' }}>{t('clickToClose')}</div>
+                        </div>
+
+                        {/* Toolbox overlay (slide-in, appears only when toggled) */}
+                        <div style={{
+                            position: 'absolute',
+                            right: toolboxOpen ? (window.innerWidth < 768 ? '0' : '280px') : (window.innerWidth < 768 ? '-100%' : '-34%'),
+                            top: '0',
+                            height: '100%',
+                            width: window.innerWidth < 768 ? '100%' : '30%',
+                            backgroundColor: currentTheme.cardBg,
+                            boxShadow: '0 0 40px rgba(0,0,0,0.6)',
+                            borderLeft: `1px solid ${currentTheme.border}`,
+                            padding: toolboxOpen ? '16px' : '0',
+                            overflow: 'hidden',
+                            transition: 'right 260ms ease, padding 200ms ease',
+                            pointerEvents: toolboxOpen ? 'auto' : 'none',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px',
+                            zIndex: 25
+                        }}>
+                            <div style={{ fontSize: '0.95rem', color: currentTheme.text, fontWeight: '600' }}>{t('palette')}</div>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                {extractedPalette.length === 0 && (
+                                    <div style={{ color: isLight ? '#6b7280' : '#888', fontSize: '0.85rem' }}>{t('noPalette')}</div>
+                                )}
+                                {extractedPalette.map((hex, idx) => (
+                                    <button
+                                        key={hex + idx}
+                                        onClick={() => handleCopyHex(hex, idx)}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            padding: '8px 10px',
+                                            borderRadius: '8px',
+                                            border: `1px solid ${currentTheme.border}`,
+                                            background: currentTheme.cardBg,
+                                            cursor: 'pointer',
+                                            color: currentTheme.text,
+                                            fontWeight: '600'
+                                        }}
+                                    >
+                                        <span style={{ width: '28px', height: '28px', borderRadius: '6px', background: hex, border: '1px solid rgba(0,0,0,0.12)' }} />
+                                        <span style={{ fontSize: '0.85rem' }}>{hex}</span>
+                                        {copiedColorIndex === idx && <span style={{ marginLeft: '6px' }}>{t('copied')}</span>}
+                                    </button>
+                                ))}
                             </div>
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', borderRadius: '8px', border: `1px solid ${currentTheme.border}` }}>
+                                <input type="checkbox" checked={isGrayscale} onChange={e => setIsGrayscale(e.target.checked)} />
+                                <span style={{ fontSize: '0.9rem' }}>{t('grayscale')}</span>
+                            </label>
+
+                            <div style={{ marginTop: 'auto', textAlign: 'center', color: isLight ? '#6b7280' : '#888', fontSize: '0.8rem' }}>{t('clickToClose')}</div>
                         </div>
                     </div>
                 </div>

@@ -42,7 +42,7 @@ router.post('/register', async (req, res) => {
         if (existingUser) {
             return res.status(409).json({
                 success: false,
-                message: '此 Email 已被註冊',
+                message: '這個信箱已被其他旅人使用過囉，請換一個或直接登入！',
             });
         }
 
@@ -51,7 +51,7 @@ router.post('/register', async (req, res) => {
         if (existingUsername) {
             return res.status(409).json({
                 success: false,
-                message: '此使用者名稱已被使用',
+                message: '這個名稱已被其他旅人珍藏，請換一個試試！',
             });
         }
 

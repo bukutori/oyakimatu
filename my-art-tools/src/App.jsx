@@ -125,6 +125,17 @@ function App() {
 
   const [authError, setAuthError] = useState('');
 
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast(prev => ({ ...prev, show: false }));
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
 
 
   // ── 1.5 主題狀態（深色/淺色模式）──────────────────────
@@ -328,17 +339,17 @@ function App() {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${savedToken}` }
           });
-          
+
           if (!meResponse.ok) {
             console.error('[Auth] /api/auth/me 請求失敗:', meResponse.status);
             return;
           }
 
           const meData = await meResponse.json();
-          
+
           if (meData.success) {
             console.log('[Auth] 雲端資料載入成功:', meData.user);
-            
+
             setUser(meData.user);
             localStorage.setItem(AUTH_KEY, JSON.stringify({ token: savedToken, user: meData.user }));
 
@@ -351,13 +362,13 @@ function App() {
               console.log('[Auth] 雲端無收藏資料，使用空陣列');
               setSavedImages([]);
             }
-            
+
             if (meData.user.language) {
               console.log('[Auth] 載入語言設定:', meData.user.language);
               setLanguage(meData.user.language);
               localStorage.setItem('my-art-tools-language', meData.user.language);
             }
-            
+
             if (meData.user.themeSettings) {
               console.log('[Auth] 載入主題設定:', meData.user.themeSettings);
               if (meData.user.themeSettings.isDarkMode !== undefined) {
@@ -425,12 +436,12 @@ function App() {
       // 計算更新後的收藏列表
       const updatedFavorites = action === 'add'
         ? [...safeSavedImages, {
-            id: img.id,
-            author: img.author || '未知作者',
-            url: img.url || `https://picsum.photos/id/${img.id}/600/450`,
-            isCustom: img.isCustom || false,
-            savedAt: Date.now(),
-          }]
+          id: img.id,
+          author: img.author || '未知作者',
+          url: img.url || `https://picsum.photos/id/${img.id}/600/450`,
+          isCustom: img.isCustom || false,
+          savedAt: Date.now(),
+        }]
         : safeSavedImages.filter(item => String(item.id) !== String(img.id));
 
       // 使用新的 PUT /api/auth/settings 端點同步到雲端
@@ -477,7 +488,7 @@ function App() {
 
       const data = await response.json();
 
-      
+
 
       if (data.success) {
 
@@ -538,17 +549,21 @@ function App() {
 
       const data = await response.json();
 
-      
+
 
       if (data.success) {
 
-        setToken(data.token);
+        setAuthMode('login');
 
-        setUser(data.user);
+        setToast({
 
-        localStorage.setItem(AUTH_KEY, JSON.stringify({ token: data.token, user: data.user }));
+          show: true,
 
-        setShowAuthModal(false);
+          message: '🎉 註冊成功！歡迎加入時光驛站，請輸入帳密開始您的旅程！',
+
+          type: 'success'
+
+        });
 
         setAuthError('');
 
@@ -593,7 +608,7 @@ function App() {
 
     if (!img) return;
 
-    
+
 
     // 未登入時提示
 
@@ -607,19 +622,19 @@ function App() {
 
     }
 
-    
+
 
     const alreadySaved = safeSavedImages.some(item => String(item.id) === String(img.id));
 
     const action = alreadySaved ? 'remove' : 'add';
 
-    
+
 
     // 先更新本地狀態
 
     setSavedImages(prev => {
       const prevArray = Array.isArray(prev) ? prev : [];
-      
+
       if (alreadySaved) {
 
         return prevArray.filter(item => String(item.id) !== String(img.id));
@@ -642,7 +657,7 @@ function App() {
 
     });
 
-    
+
 
     // 同步到後端
 
@@ -855,7 +870,7 @@ function App() {
 
     const isLight = !isDarkMode;
 
-    
+
 
     return {
 
@@ -893,19 +908,19 @@ function App() {
 
           : 'transparent',
 
-      color: isActive 
+      color: isActive
 
-        ? (isLight ? '#3b82f6' : '#fb7185') 
+        ? (isLight ? '#3b82f6' : '#fb7185')
 
-        : isHovered 
+        : isHovered
 
-          ? currentTheme.text 
+          ? currentTheme.text
 
           : (isLight ? '#6b7280' : '#9ca3af'),
 
-      borderBottom: isActive 
+      borderBottom: isActive
 
-        ? (isLight ? '2px solid #3b82f6' : '2px solid #fb7185') 
+        ? (isLight ? '2px solid #3b82f6' : '2px solid #fb7185')
 
         : '2px solid transparent',
 
@@ -1094,7 +1109,45 @@ function App() {
             box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
           }
         }
+        @keyframes toastFadeIn {
+          from { opacity: 0; transform: translate(-50%, -20px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        @keyframes toastFadeOut {
+          from { opacity: 1; transform: translate(-50%, 0); }
+          to { opacity: 0; transform: translate(-50%, -20px); }
+        }
       `}</style>
+
+      {/* Toast 提示 */}
+      {toast.show && (
+        <div style={{
+          position: 'fixed',
+          top: '30px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: toast.type === 'success'
+            ? (isDarkMode ? 'rgba(16, 185, 129, 0.95)' : 'rgba(209, 250, 229, 0.95)')
+            : (isDarkMode ? 'rgba(239, 68, 68, 0.95)' : 'rgba(254, 226, 226, 0.95)'),
+          color: toast.type === 'success'
+            ? (isDarkMode ? '#fff' : '#065f46')
+            : (isDarkMode ? '#fff' : '#991b1b'),
+          border: `1px solid ${toast.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+          padding: '14px 28px',
+          borderRadius: '12px',
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3)',
+          zIndex: 100000,
+          fontSize: '0.95rem',
+          fontWeight: '600',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          animation: 'toastFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1), toastFadeOut 0.3s cubic-bezier(0.7, 0, 0.84, 0) 3.7s forwards'
+        }}>
+          <span>{toast.message}</span>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════
            頂部導覽列 — 毛玻璃 + RWD 漢堡選單
@@ -1135,7 +1188,7 @@ function App() {
         }}>
 
           {/* ─ Logo ─ */}
-          <div 
+          <div
             onClick={() => setActiveView('explore')}
             style={{
               display: 'flex',
@@ -1455,8 +1508,8 @@ function App() {
                                 padding: '12px 14px',
                                 borderBottom: isLight ? '1px solid rgba(0,0,0,0.05)' : '1px solid rgba(255,255,255,0.05)',
                                 cursor: 'pointer',
-                                background: notif.isRead 
-                                  ? 'transparent' 
+                                background: notif.isRead
+                                  ? 'transparent'
                                   : (isLight ? 'rgba(59,130,246,0.05)' : 'rgba(251,113,133,0.05)'),
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -1464,8 +1517,8 @@ function App() {
                                 transition: 'background 0.2s',
                               }}
                               onMouseEnter={e => e.currentTarget.style.background = isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)'}
-                              onMouseLeave={e => e.currentTarget.style.background = notif.isRead 
-                                ? 'transparent' 
+                              onMouseLeave={e => e.currentTarget.style.background = notif.isRead
+                                ? 'transparent'
                                 : (isLight ? 'rgba(59,130,246,0.05)' : 'rgba(251,113,133,0.05)')}
                             >
                               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
@@ -1692,7 +1745,7 @@ function App() {
                     transform: isMobileMenuOpen
                       ? i === 0 ? 'translateY(7px) rotate(45deg)'
                         : i === 1 ? 'scaleX(0) opacity(0)'
-                        : 'translateY(-7px) rotate(-45deg)'
+                          : 'translateY(-7px) rotate(-45deg)'
                       : 'none',
                     opacity: isMobileMenuOpen && i === 1 ? 0 : 1,
                   }}
@@ -2382,7 +2435,7 @@ function App() {
 
                 }}>
 
-                   {t('adminFeatures')}
+                  {t('adminFeatures')}
 
                 </div>
 
@@ -2441,152 +2494,152 @@ function App() {
       )}
 
       {/* ── 頁尾 ─────────────────────────────────────────── */}
-<footer style={{
-  padding: 'clamp(40px, 6vw, 72px) clamp(16px, 4vw, 40px) clamp(24px, 4vw, 40px)',
-  borderTop: isLight
-    ? '1px solid rgba(148,163,184,0.2)'
-    : '1px solid rgba(255,255,255,0.06)',
-  background: isLight
-    ? 'rgba(248,250,252,0.8)'
-    : 'rgba(10,10,15,0.8)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  color: currentTheme.text,
-  fontSize: '0.9rem',
-  letterSpacing: '0.01em',
-}}>
-  <div style={{
-    maxWidth: '1200px',
-    margin: '0 auto',
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: 'clamp(24px, 4vw, 48px)',
-  }}>
-
-    {/* 關於 */}
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+      <footer style={{
+        padding: 'clamp(40px, 6vw, 72px) clamp(16px, 4vw, 40px) clamp(24px, 4vw, 40px)',
+        borderTop: isLight
+          ? '1px solid rgba(148,163,184,0.2)'
+          : '1px solid rgba(255,255,255,0.06)',
+        background: isLight
+          ? 'rgba(248,250,252,0.8)'
+          : 'rgba(10,10,15,0.8)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        color: currentTheme.text,
+        fontSize: '0.9rem',
+        letterSpacing: '0.01em',
+      }}>
         <div style={{
-          width: '32px', height: '32px', borderRadius: '8px',
-          background: isLight ? 'linear-gradient(135deg, #dbeafe, #bfdbfe)' : 'linear-gradient(135deg, #1e1b4b, #312e81)',
-          border: isLight ? '1px solid rgba(59,130,246,0.25)' : '1px solid rgba(99,102,241,0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '1rem',
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 'clamp(24px, 4vw, 48px)',
         }}>
-          🖌️
-        </div>
-        <h4 style={{
-          margin: '0',
-          fontSize: '1rem',
-          fontWeight: '700',
-          color: isLight ? '#3b82f6' : '#fb7185',
-          letterSpacing: '-0.01em',
-        }}>
-          {t('footerAbout')}
-        </h4>
-      </div>
-      <p style={{
-        margin: '0',
-        lineHeight: '1.75',
-        color: isLight ? '#64748b' : '#64748b',
-        fontSize: '0.875rem',
-      }}>
-        {t('footerAboutDesc')}
-      </p>
-    </div>
 
-    {/* 快捷連結 */}
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <h4 style={{
-        margin: '0 0 4px 0',
-        fontSize: '1rem',
-        fontWeight: '700',
-        color: isLight ? '#3b82f6' : '#fb7185',
-        letterSpacing: '-0.01em',
-      }}>
-        {t('footerQuickLinks')}
-      </h4>
-      <ul style={{ margin: '0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <li>
-          <a
-            href="https://bukutori.github.io/devfolio-1.0.0/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
+          {/* 關於 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '8px',
+                background: isLight ? 'linear-gradient(135deg, #dbeafe, #bfdbfe)' : 'linear-gradient(135deg, #1e1b4b, #312e81)',
+                border: isLight ? '1px solid rgba(59,130,246,0.25)' : '1px solid rgba(99,102,241,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1rem',
+              }}>
+                🖌️
+              </div>
+              <h4 style={{
+                margin: '0',
+                fontSize: '1rem',
+                fontWeight: '700',
+                color: isLight ? '#3b82f6' : '#fb7185',
+                letterSpacing: '-0.01em',
+              }}>
+                {t('footerAbout')}
+              </h4>
+            </div>
+            <p style={{
+              margin: '0',
+              lineHeight: '1.75',
               color: isLight ? '#64748b' : '#64748b',
-              textDecoration: 'none',
               fontSize: '0.875rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'color 0.2s',
-            }}
-            onMouseOver={e => { e.currentTarget.style.color = isLight ? '#3b82f6' : '#fb7185'; }}
-            onMouseOut={e => { e.currentTarget.style.color = isLight ? '#64748b' : '#64748b'; }}
-          >
-            <span style={{ fontSize: '0.85rem' }}>↗</span>
-            {t('footerMySite')}
-          </a>
-        </li>
-      </ul>
-    </div>
+            }}>
+              {t('footerAboutDesc')}
+            </p>
+          </div>
 
-    {/* 連線狀態 */}
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <h4 style={{
-        margin: '0 0 4px 0',
-        fontSize: '1rem',
-        fontWeight: '700',
-        color: isLight ? '#3b82f6' : '#fb7185',
-        letterSpacing: '-0.01em',
-      }}>
-        {t('footerStatus')}
-      </h4>
-      <p style={{
-        margin: '0 0 12px 0',
-        lineHeight: '1.75',
-        color: isLight ? '#64748b' : '#64748b',
-        fontSize: '0.875rem',
-      }}>
-        {t('footerStatusDesc')}
-      </p>
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        <span style={{
-          display: 'inline-flex',
+          {/* 快捷連結 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h4 style={{
+              margin: '0 0 4px 0',
+              fontSize: '1rem',
+              fontWeight: '700',
+              color: isLight ? '#3b82f6' : '#fb7185',
+              letterSpacing: '-0.01em',
+            }}>
+              {t('footerQuickLinks')}
+            </h4>
+            <ul style={{ margin: '0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <li>
+                <a
+                  href="https://bukutori.github.io/devfolio-1.0.0/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: isLight ? '#64748b' : '#64748b',
+                    textDecoration: 'none',
+                    fontSize: '0.875rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'color 0.2s',
+                  }}
+                  onMouseOver={e => { e.currentTarget.style.color = isLight ? '#3b82f6' : '#fb7185'; }}
+                  onMouseOut={e => { e.currentTarget.style.color = isLight ? '#64748b' : '#64748b'; }}
+                >
+                  <span style={{ fontSize: '0.85rem' }}>↗</span>
+                  {t('footerMySite')}
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* 連線狀態 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h4 style={{
+              margin: '0 0 4px 0',
+              fontSize: '1rem',
+              fontWeight: '700',
+              color: isLight ? '#3b82f6' : '#fb7185',
+              letterSpacing: '-0.01em',
+            }}>
+              {t('footerStatus')}
+            </h4>
+            <p style={{
+              margin: '0 0 12px 0',
+              lineHeight: '1.75',
+              color: isLight ? '#64748b' : '#64748b',
+              fontSize: '0.875rem',
+            }}>
+              {t('footerStatusDesc')}
+            </p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '0.75rem',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                background: isLight ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.15)',
+                border: '1px solid rgba(16,185,129,0.3)',
+                color: isLight ? '#059669' : '#34d399',
+                fontWeight: '600',
+              }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                {t('footerStatusSynced')}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 底部版權 */}
+        <div style={{
+          maxWidth: '1200px',
+          margin: '40px auto 0 auto',
+          paddingTop: '20px',
+          borderTop: isLight ? '1px solid rgba(148,163,184,0.15)' : '1px solid rgba(255,255,255,0.06)',
+          display: 'flex',
           alignItems: 'center',
-          gap: '5px',
-          fontSize: '0.75rem',
-          padding: '4px 10px',
-          borderRadius: '20px',
-          background: isLight ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.15)',
-          border: '1px solid rgba(16,185,129,0.3)',
-          color: isLight ? '#059669' : '#34d399',
-          fontWeight: '600',
+          justifyContent: 'center',
+          gap: '8px',
+          opacity: 0.5,
+          fontSize: '0.78rem',
+          textAlign: 'center',
         }}>
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-          {t('footerStatusSynced')}
-        </span>
-      </div>
-    </div>
-  </div>
-
-  {/* 底部版權 */}
-  <div style={{
-    maxWidth: '1200px',
-    margin: '40px auto 0 auto',
-    paddingTop: '20px',
-    borderTop: isLight ? '1px solid rgba(148,163,184,0.15)' : '1px solid rgba(255,255,255,0.06)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    opacity: 0.5,
-    fontSize: '0.78rem',
-    textAlign: 'center',
-  }}>
-    © 2024 – {new Date().getFullYear()} {t('footerCopyright')} · All rights reserved.
-  </div>
-</footer>
+          © 2024 – {new Date().getFullYear()} {t('footerCopyright')} · All rights reserved.
+        </div>
+      </footer>
 
     </div>
 
@@ -3223,9 +3276,26 @@ function AuthModal({ mode, onClose, onModeChange, onLogin, onRegister, error, th
 
     password: '',
 
+    confirmPassword: '',
+
     displayName: '',
 
   });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [localError, setLocalError] = useState('');
+
+  useEffect(() => {
+    setLocalError('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setFormData(prev => ({
+      ...prev,
+      password: '',
+      confirmPassword: '',
+    }));
+  }, [mode]);
 
   const currentTheme = THEMES[theme] || THEMES.dark;
   const isLight = theme === 'light';
@@ -3242,6 +3312,15 @@ function AuthModal({ mode, onClose, onModeChange, onLogin, onRegister, error, th
 
     } else {
 
+      if (formData.password.length < 8) {
+        setLocalError('密碼長度必須至少為 8 個字元喔！');
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setLocalError('密碼與確認密碼不一致，請重新檢查！');
+        return;
+      }
+      setLocalError('');
       onRegister(formData.username, formData.email, formData.password, formData.displayName);
 
     }
@@ -3714,53 +3793,269 @@ function AuthModal({ mode, onClose, onModeChange, onLogin, onRegister, error, th
 
             </label>
 
-            <input
+            <div style={{ position: 'relative' }}>
 
-              type="password"
+              <input
 
-              value={formData.password}
+                type={showPassword ? 'text' : 'password'}
 
-              onChange={e => setFormData({ ...formData, password: e.target.value })}
+                value={formData.password}
 
-              placeholder="••••••••"
+                onChange={e => setFormData({ ...formData, password: e.target.value })}
 
-              required
+                placeholder="請輸入至少 8 位密碼"
 
-              style={{
+                required
 
-                width: '100%',
+                style={{
 
-                padding: '12px 14px',
+                  width: '100%',
 
-                borderRadius: '10px',
+                  padding: '12px 42px 12px 14px',
 
-                border: `1px solid ${currentTheme.border}`,
+                  borderRadius: '10px',
 
-                backgroundColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${currentTheme.border}`,
 
-                color: currentTheme.text,
+                  backgroundColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
 
-                fontSize: '0.95rem',
+                  color: currentTheme.text,
 
-                outline: 'none',
+                  fontSize: '0.95rem',
 
-                transition: 'border-color 0.2s',
+                  outline: 'none',
 
-              }}
+                  transition: 'border-color 0.2s',
 
-              onFocus={e => e.currentTarget.style.borderColor = isLight ? '#3b82f6' : '#fb7185'}
+                }}
 
-              onBlur={e => e.currentTarget.style.borderColor = currentTheme.border}
+                onFocus={e => e.currentTarget.style.borderColor = isLight ? '#3b82f6' : '#fb7185'}
 
-            />
+                onBlur={e => e.currentTarget.style.borderColor = currentTheme.border}
+
+              />
+
+              <button
+
+                type="button"
+
+                onClick={() => setShowPassword(!showPassword)}
+
+                style={{
+
+                  position: 'absolute',
+
+                  right: '12px',
+
+                  top: '50%',
+
+                  transform: 'translateY(-50%)',
+
+                  background: 'none',
+
+                  border: 'none',
+
+                  cursor: 'pointer',
+
+                  color: isLight ? '#6b7280' : '#aaa',
+
+                  display: 'flex',
+
+                  alignItems: 'center',
+
+                  justifyContent: 'center',
+
+                  padding: '4px',
+
+                  outline: 'none',
+
+                  opacity: 0.7,
+
+                  transition: 'opacity 0.2s',
+
+                }}
+
+                onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+
+                onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}
+
+              >
+
+                {showPassword ? (
+
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+
+                    <circle cx="12" cy="12" r="3"></circle>
+
+                  </svg>
+
+                ) : (
+
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+
+                  </svg>
+
+                )}
+
+              </button>
+
+            </div>
 
           </div>
 
 
 
+          {mode === 'register' && (
+
+            <div style={{ marginBottom: '24px' }}>
+
+              <label style={{
+
+                display: 'block',
+
+                color: isLight ? '#6b7280' : '#aaa',
+
+                fontSize: '0.85rem',
+
+                marginBottom: '6px',
+
+                fontWeight: '500',
+
+              }}>
+
+                確認密碼
+
+              </label>
+
+              <div style={{ position: 'relative' }}>
+
+                <input
+
+                  type={showConfirmPassword ? 'text' : 'password'}
+
+                  value={formData.confirmPassword}
+
+                  onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+
+                  placeholder="請再次輸入密碼"
+
+                  required
+
+                  style={{
+
+                    width: '100%',
+
+                    padding: '12px 42px 12px 14px',
+
+                    borderRadius: '10px',
+
+                    border: `1px solid ${currentTheme.border}`,
+
+                    backgroundColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
+
+                    color: currentTheme.text,
+
+                    fontSize: '0.95rem',
+
+                    outline: 'none',
+
+                    transition: 'border-color 0.2s',
+
+                  }}
+
+                  onFocus={e => e.currentTarget.style.borderColor = isLight ? '#3b82f6' : '#fb7185'}
+
+                  onBlur={e => e.currentTarget.style.borderColor = currentTheme.border}
+
+                />
+
+                <button
+
+                  type="button"
+
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+
+                  style={{
+
+                    position: 'absolute',
+
+                    right: '12px',
+
+                    top: '50%',
+
+                    transform: 'translateY(-50%)',
+
+                    background: 'none',
+
+                    border: 'none',
+
+                    cursor: 'pointer',
+
+                    color: isLight ? '#6b7280' : '#aaa',
+
+                    display: 'flex',
+
+                    alignItems: 'center',
+
+                    justifyContent: 'center',
+
+                    padding: '4px',
+
+                    outline: 'none',
+
+                    opacity: 0.7,
+
+                    transition: 'opacity 0.2s',
+
+                  }}
+
+                  onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+
+                  onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}
+
+                >
+
+                  {showConfirmPassword ? (
+
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+
+                      <circle cx="12" cy="12" r="3"></circle>
+
+                    </svg>
+
+                  ) : (
+
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+
+                    </svg>
+
+                  )}
+
+                </button>
+
+              </div>
+
+            </div>
+
+          )}
+
+
+
           {/* 錯誤訊息 */}
 
-          {error && (
+          {(localError || error) && (
 
             <div style={{
 
@@ -3782,7 +4077,7 @@ function AuthModal({ mode, onClose, onModeChange, onLogin, onRegister, error, th
 
             }}>
 
-              {error}
+              {localError || error}
 
             </div>
 
@@ -3843,42 +4138,6 @@ function AuthModal({ mode, onClose, onModeChange, onLogin, onRegister, error, th
           </button>
 
         </form>
-
-
-
-        {/* 測試帳號提示 */}
-
-        {mode === 'login' && (
-
-          <div style={{
-
-            marginTop: '20px',
-
-            padding: '12px',
-
-            backgroundColor: isLight ? 'rgba(59, 130, 246, 0.08)' : 'rgba(251, 113, 133, 0.08)',
-
-            borderRadius: '8px',
-
-            border: isLight ? '1px solid rgba(59, 130, 246, 0.2)' : '1px solid rgba(251, 113, 133, 0.2)',
-
-            fontSize: '0.8rem',
-
-            color: isLight ? '#3b82f6' : '#fb7185',
-
-            lineHeight: '1.6',
-
-          }}>
-
-            <strong>測試帳號：</strong><br />
-
-            Email: artist01@example.com<br />
-
-            密碼: password123
-
-          </div>
-
-        )}
 
       </div>
 

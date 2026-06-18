@@ -13,6 +13,10 @@ import AdminPanel from './AdminPanel';
 import StationWall from './StationWall';
 
 import logoImg from './img/144.png';
+import sunIcon from './img/太陽.png';
+import moonIcon from './img/月と星.png';
+import heartIcon from './img/like2.png';
+import heartActiveIcon from './img/like3.png';
 
 import TRANSLATIONS from './translations';
 
@@ -1447,7 +1451,11 @@ function App() {
                 }
               }}
             >
-              {isDarkMode ? '' : ''}
+              <img
+                src={isDarkMode ? moonIcon : sunIcon}
+                alt={isDarkMode ? '月亮背景' : '太陽背景'}
+                style={{ width: '26px', height: '26px' }}
+              />
             </button>
 
 
@@ -1485,7 +1493,11 @@ function App() {
                       e.currentTarget.style.transform = 'scale(1)';
                     }}
                   >
-                    
+                    <img
+                      src={unreadNotifCount > 0 ? heartActiveIcon : heartIcon}
+                      alt={t('notifications')}
+                      style={{ width: '26px', height: '26px' }}
+                    />
                     {unreadNotifCount > 0 && (
                       <span
                         style={{
@@ -1657,7 +1669,11 @@ function App() {
                     e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
                   }}
                 >
-                  
+                  <img
+                    src={heartIcon}
+                    alt={t('settings')}
+                    style={{ width: '26px', height: '26px' }}
+                  />
                 </button>
               </>
             )}
@@ -3036,11 +3052,7 @@ function FavoritesGallery({ savedImages, toggleFavorite, onZoom, onGoExplore, th
 
                   border: 'none',
 
-                  color: '#fb7185',
-
                   cursor: 'pointer',
-
-                  fontSize: '1.2rem',
 
                   padding: '3px',
 
@@ -3058,7 +3070,11 @@ function FavoritesGallery({ savedImages, toggleFavorite, onZoom, onGoExplore, th
 
               >
 
-                
+                <img
+                  src={heartActiveIcon}
+                  alt="取消收藏"
+                  style={{ width: '28px', height: '28px', display: 'block' }}
+                />
 
               </button>
 

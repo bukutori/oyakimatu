@@ -11,6 +11,18 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: false
   },
+  imageScale: {
+    type: Number,
+    default: 1
+  },
+  imageOffsetX: {
+    type: Number,
+    default: 0
+  },
+  imageOffsetY: {
+    type: Number,
+    default: 0
+  },
   content: {
     type: String,
     required: false,

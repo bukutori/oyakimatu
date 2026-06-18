@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
 import axios from 'axios';
+import heartIcon from './img/like2.png';
+import heartActiveIcon from './img/like3.png';
 import TRANSLATIONS from './translations';
 
 
@@ -877,15 +879,15 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                                                     top: '7px', left: '7px',
 
-                                                    backgroundColor: isLiked ? '#fb7185' : 'rgba(0,0,0,0.6)',
-
-                                                    color: '#fff',
+                                                    backgroundColor: 'transparent',
 
                                                     border: 'none',
 
-                                                    borderRadius: '50%',
+                                                    borderRadius: 0,
 
                                                     width: '28px', height: '28px',
+
+                                                    padding: 0,
 
                                                     display: 'flex',
 
@@ -895,9 +897,7 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                                                     cursor: 'pointer',
 
-                                                    fontSize: '0.85rem',
-
-                                                    boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+                                                    boxShadow: 'none',
 
                                                     opacity: (isHov || isLiked) ? 1 : 0,
 
@@ -913,7 +913,11 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
                                             >
 
-                                                {isLiked ? '' : ''}
+                                                <img
+                                                  src={isLiked ? heartActiveIcon : heartIcon}
+                                                  alt={isLiked ? t('cancelFavorite') : t('addFavorite')}
+                                                  style={{ width: '32px', height: '32px', display: 'block' }}
+                                                />
 
                                             </button>
 

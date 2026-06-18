@@ -22,6 +22,9 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import heartGrayIcon from './img/like2.png';
+import heartRedIcon from './img/like3.png';
+import gomibakoIcon from './img/gomibako.png';
 import TRANSLATIONS from './translations';
 
 const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
@@ -41,6 +44,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
   const [showPostForm, setShowPostForm]     = useState(false);
   const [formData, setFormData]             = useState({ image: null, content: '' });
   const [imagePreview, setImagePreview]     = useState(null);
+  const [imageTransform, setImageTransform] = useState({ scale: 1, offsetX: 0, offsetY: 0 });
   const [message, setMessage]               = useState('');
   const [messageType, setMessageType]       = useState('info');       // 'info' | 'success' | 'error'
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -54,6 +58,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
   const [commentInputs, setCommentInputs]   = useState({});
   const [expandedComments, setExpandedComments] = useState({});
   const [submittingCommentId, setSubmittingCommentId] = useState(null);
+  const [hoveredPostId, setHoveredPostId]   = useState(null);
 
   // ── 顯示訊息工具函式 ─────────────────────────────────────────────────────────
   const showMessage = (text, type = 'info', duration = 4000) => {
@@ -144,6 +149,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
       }
       setFormData(prev => ({ ...prev, image: file }));
       setImagePreview(URL.createObjectURL(file));
+      setImageTransform({ scale: 1, offsetX: 0, offsetY: 0 });
     }
   };
 
@@ -172,6 +178,9 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
       const formDataToSend = new FormData();
       formDataToSend.append('image', formData.image);
       formDataToSend.append('content', formData.content.trim());
+      formDataToSend.append('imageScale', imageTransform.scale.toString());
+      formDataToSend.append('imageOffsetX', imageTransform.offsetX.toString());
+      formDataToSend.append('imageOffsetY', imageTransform.offsetY.toString());
 
       const response = await fetch(`${API_BASE}/api/posts`, {
         method: 'POST',
@@ -682,16 +691,29 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     }}
                   />
                   {imagePreview ? (
-                    <img
-                      src={imagePreview}
-                      alt="預覽"
-                      style={{
-                        maxWidth: '100%',
-                        maxHeight: '240px',
-                        borderRadius: '8px',
-                        objectFit: 'contain'
-                      }}
-                    />
+                    <div style={{
+                      position: 'relative',
+                      width: '100%',
+                      height: '240px',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      backgroundColor: theme === 'dark' ? '#111' : '#f0f0f0'
+                    }}>
+                      <img
+                        src={imagePreview}
+                        alt="預覽"
+                        style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          transform: `translate(calc(-50% + ${imageTransform.offsetX}%), calc(-50% + ${imageTransform.offsetY}%)) scale(${imageTransform.scale})`,
+                          transition: 'transform 0.2s ease'
+                        }}
+                      />
+                    </div>
                   ) : (
                     <div>
                       <div style={{ fontSize: '36px', marginBottom: '8px' }}></div>
@@ -704,6 +726,56 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     </div>
                   )}
                 </div>
+                {imagePreview && (
+                  <div style={{ marginTop: '18px', padding: '16px', borderRadius: '14px', backgroundColor: theme === 'dark' ? '#111' : '#f8f8f8' }}>
+                    <div style={{ color: currentTheme.textSecondary, fontSize: '13px', fontWeight: '600', marginBottom: '12px' }}>
+                      {t('imageAdjustHint')}
+                    </div>
+                    <div style={{ display: 'grid', gap: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: currentTheme.text, fontSize: '13px', fontWeight: '700' }}>{t('imageScale')}</span>
+                        <span style={{ color: currentTheme.textSecondary, fontSize: '12px' }}>{Math.round(imageTransform.scale * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.7"
+                        max="1.8"
+                        step="0.02"
+                        value={imageTransform.scale}
+                        onChange={(e) => setImageTransform(prev => ({ ...prev, scale: parseFloat(e.target.value) }))}
+                        style={{ width: '100%' }}
+                      />
+                      <div style={{ display: 'grid', gap: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ color: currentTheme.text, fontSize: '13px', fontWeight: '700' }}>{t('imageOffsetX')}</span>
+                          <span style={{ color: currentTheme.textSecondary, fontSize: '12px' }}>{imageTransform.offsetX}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-30"
+                          max="30"
+                          step="1"
+                          value={imageTransform.offsetX}
+                          onChange={(e) => setImageTransform(prev => ({ ...prev, offsetX: parseInt(e.target.value, 10) }))}
+                          style={{ width: '100%' }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ color: currentTheme.text, fontSize: '13px', fontWeight: '700' }}>{t('imageOffsetY')}</span>
+                          <span style={{ color: currentTheme.textSecondary, fontSize: '12px' }}>{imageTransform.offsetY}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-30"
+                          max="30"
+                          step="1"
+                          value={imageTransform.offsetY}
+                          onChange={(e) => setImageTransform(prev => ({ ...prev, offsetY: parseInt(e.target.value, 10) }))}
+                          style={{ width: '100%' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 故事文字 */}
@@ -783,6 +855,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                     setShowPostForm(false);
                     setFormData({ image: null, content: '' });
                     setImagePreview(null);
+                    setImageTransform({ scale: 1, offsetX: 0, offsetY: 0 });
                   }}
                   style={{
                     flex: 1,
@@ -915,65 +988,45 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                           position: 'absolute',
                           top: '10px',
                           left: '10px',
-                          backgroundColor: 'rgba(239, 68, 68, 0.9)',
-                          color: '#fff',
+                          background: 'transparent',
                           border: 'none',
-                          borderRadius: '50%',
+                          padding: 0,
                           width: '32px',
                           height: '32px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           cursor: 'pointer',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                          transition: 'all 0.2s',
+                          transition: 'transform 0.2s',
                           zIndex: 10
                         }}
                         title="刪除這張明信片"
                         onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
                         onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
                       >
-                        
+                        <img
+                          src={gomibakoIcon}
+                          alt="刪除明信片"
+                          style={{ width: '30px', height: '30px', display: 'block' }}
+                        />
                       </button>
                     )}
 
                     <img
                       src={post.imageUrl}
-                      alt="明信片"
-                      onClick={() => setLightboxPost(post)}
-                      /* ── 管理員待審核 Tab 的毛玻璃特效（Tailwind class）── */
-                      className={isAdminPendingTab ? 'blur-md hover:blur-none transition duration-300' : ''}
+                      alt={post.content || t('postImage')}
                       style={{
                         position: 'absolute',
-                        top: 0, left: 0,
-                        width: '100%', height: '100%',
+                        top: '50%',
+                        left: '50%',
+                        width: '100%',
+                        height: '100%',
                         objectFit: 'cover',
-                        transition: 'transform 0.4s ease',
-                        cursor: 'pointer'
+                        transform: `translate(calc(-50% + ${post.imageOffsetX || 0}%), calc(-50% + ${post.imageOffsetY || 0}%)) scale(${post.imageScale || 1})`,
+                        transition: 'transform 0.2s ease',
+                        pointerEvents: 'none'
                       }}
-                      onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.06)'; }}
-                      onMouseOut={(e)  => { e.currentTarget.style.transform = 'scale(1)'; }}
                     />
-
-                    {/* 待審核標籤（右上角浮動徽章） */}
-                    {isPending && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '10px',
-                        right: '10px',
-                        backgroundColor: '#f59e0b',
-                        color: '#1a1a1a',
-                        fontSize: '11px',
-                        fontWeight: '900',
-                        padding: '4px 10px',
-                        borderRadius: '20px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase'
-                      }}>
-                        ⏳ PENDING
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -1043,22 +1096,24 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDelete(post._id, true); }}
                           style={{
-                            background: 'none',
+                            background: 'transparent',
                             border: 'none',
                             cursor: 'pointer',
-                            fontSize: '14px',
-                            padding: '2px 6px',
+                            padding: 0,
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            borderRadius: '4px',
-                            transition: 'background 0.2s',
+                            transition: 'transform 0.2s',
                           }}
-                          onMouseOver={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
-                          onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                          onMouseOver={e => e.currentTarget.style.transform = 'scale(1.08)'}
+                          onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
                           title="刪除這張明信片"
                         >
-                          
+                          <img
+                            src={gomibakoIcon}
+                            alt="刪除明信片"
+                            style={{ width: '18px', height: '18px', display: 'block' }}
+                          />
                         </button>
                       )}
                     </div>
@@ -1122,13 +1177,11 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                         e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
                       }}
                     >
-                      <span style={{ 
-                        fontSize: '1.1rem',
-                        transition: 'transform 0.15s ease',
-                        display: 'inline-block',
-                      }}>
-                        {hasLiked(post) ? '' : ''}
-                      </span>
+                      <img
+                        src={hasLiked(post) ? heartRedIcon : heartGrayIcon}
+                        alt={hasLiked(post) ? '已喜歡' : '喜歡'}
+                        style={{ width: '30px', height: '30px' }}
+                      />
                       <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>
                         {post.likes ? post.likes.length : 0} {t('likeCount')}
                       </span>
@@ -1414,9 +1467,12 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                   src={lightboxPost.imageUrl}
                   alt="放大預覽"
                   style={{
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    objectFit: 'contain'
+                    position: 'absolute',
+                    top: '50%', left: '50%',
+                    maxWidth: '95%',
+                    maxHeight: '95%',
+                    objectFit: 'contain',
+                    transform: `translate(calc(-50% + ${(lightboxPost.imageOffsetX || 0)}%), calc(-50% + ${(lightboxPost.imageOffsetY || 0)}%)) scale(${lightboxPost.imageScale || 1})`
                   }}
                 />
               </div>
@@ -1514,13 +1570,11 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                       e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
                     }}
                   >
-                    <span style={{ 
-                      fontSize: '1.1rem',
-                      transition: 'transform 0.15s ease',
-                      display: 'inline-block',
-                    }}>
-                      {hasLiked(lightboxPost) ? '' : ''}
-                    </span>
+                    <img
+                      src={hasLiked(lightboxPost) ? heartRedIcon : heartGrayIcon}
+                      alt={hasLiked(lightboxPost) ? '已喜歡' : '喜歡'}
+                      style={{ width: '30px', height: '30px' }}
+                    />
                     <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>
                       {lightboxPost.likes ? lightboxPost.likes.length : 0} {t('likeCount')}
                     </span>

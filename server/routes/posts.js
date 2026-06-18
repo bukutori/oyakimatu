@@ -73,9 +73,16 @@ router.post('/', verifyToken, upload.single('image'), async (req, res) => {
     const status = isAdmin ? 'approved' : 'pending';
     const message = isAdmin ? '明信片已成功發布！' : '明信片已送出，等待管理員審核！';
 
+    const imageScale = parseFloat(req.body.imageScale) || 1;
+    const imageOffsetX = parseFloat(req.body.imageOffsetX) || 0;
+    const imageOffsetY = parseFloat(req.body.imageOffsetY) || 0;
+
     // 2. 存入 MongoDB
     const newPost = new Post({
       imageUrl: hasImage ? imageUrl : undefined,
+      imageScale: hasImage ? imageScale : 1,
+      imageOffsetX: hasImage ? imageOffsetX : 0,
+      imageOffsetY: hasImage ? imageOffsetY : 0,
       content:  hasContent ? content.trim() : undefined,
       username: req.user.username,  // 來自 JWT payload
       userId:   req.user.id,        // 來自 JWT payload（與 User.id 對應）

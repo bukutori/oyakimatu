@@ -1457,7 +1457,7 @@ function App() {
               <img
                 src={isDarkMode ? moonIcon : sunIcon}
                 alt={isDarkMode ? '月亮背景' : '太陽背景'}
-                style={{ width: '26px', height: '26px' }}
+                style={{ width: '30px', height: '30px' }}
               />
             </button>
 
@@ -1499,7 +1499,7 @@ function App() {
                     <img
                       src={bellIcon}
                       alt={t('notifications')}
-                      style={{ width: '26px', height: '26px' }}
+                      style={{ width: '30px', height: '30px' }}
                     />
                     {unreadNotifCount > 0 && (
                       <span

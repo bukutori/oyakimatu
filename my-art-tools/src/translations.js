@@ -45,6 +45,7 @@ const TRANSLATIONS = {
     inspiration: '靈感抽籤',
 
     palette: '主題色票',
+    pixelCanvas: '像素畫布',
     noPalette: '無可用色票',
     copied: '已複製',
     toolbox: '工具箱',
@@ -321,6 +322,26 @@ const TRANSLATIONS = {
     // 時間單位
     minutesUnit: '分',
     secondsUnit: '秒',
+    
+    gridSize: '畫布尺寸',
+    tools: '繪圖工具',
+    pencil: '鉛筆',
+    bucket: '油漆桶',
+    eyeDropper: '吸管選色',
+    eraser: '橡皮擦',
+    rect: '空心矩形',
+    circle: '空心圓形',
+    selectMove: '圈選移動',
+    confirmMove: '確定移動位置',
+    cancelSelection: '取消選區恢復原狀',
+    brushSize: '筆刷大小',
+    history: '歷史紀錄',
+    undo: '復原上一步 (Ctrl+Z)',
+    noHistory: '目前無歷史紀錄',
+    clearCanvas: '一鍵清空畫布',
+    colorPicker: 'HSV 調色盤',
+    exportImage: '導出圖片',
+    flipHorizontal: '左右翻轉畫布',
 
   },
 
@@ -363,6 +384,7 @@ const TRANSLATIONS = {
     inspiration: 'インスピガチャ',
 
     palette: 'パレット',
+    pixelCanvas: 'ピクセルキャンバス',
 
     station: '掲示板',
 
@@ -635,6 +657,25 @@ const TRANSLATIONS = {
     // 時間単位
     minutesUnit: '分',
     secondsUnit: '秒',
+    gridSize: 'キャンバスサイズ',
+    tools: 'ツールの選択',
+    pencil: 'ペン',
+    bucket: '塗りつぶし',
+    eyeDropper: 'スポイト',
+    eraser: '消しゴム',
+    rect: '長方形を描く',
+    circle: '円を描く',
+    selectMove: '範囲選択・移動',
+    confirmMove: '移動位置を確定',
+    cancelSelection: '選択解除',
+    brushSize: 'ブラシサイズ',
+    history: '履歴',
+    undo: '元に戻す (Ctrl+Z)',
+    noHistory: '履歴がありません',
+    clearCanvas: 'キャンバスをクリア',
+    colorPicker: 'HSV カラーピッカー',
+    exportImage: '画像を書き出し',
+    flipHorizontal: '左右反転',
 
   },
 
@@ -677,6 +718,7 @@ const TRANSLATIONS = {
     inspiration: 'Inspiration Draw',
 
     palette: 'Color Palette',
+    pixelCanvas: 'Pixel Canvas',
 
     station: 'Message Board',
 
@@ -949,6 +991,25 @@ const TRANSLATIONS = {
     // Time Units
     minutesUnit: 'min',
     secondsUnit: 'sec',
+    gridSize: 'Grid Size',
+    tools: 'Tools',
+    pencil: 'Pencil',
+    bucket: 'Bucket',
+    eyeDropper: 'Eye Dropper',
+    eraser: 'Eraser',
+    rect: 'Rectangle',
+    circle: 'Circle',
+    selectMove: 'Select & Move',
+    confirmMove: 'Confirm Move',
+    cancelSelection: 'Cancel Selection',
+    brushSize: 'Brush Size',
+    history: 'History',
+    undo: 'Undo (Ctrl+Z)',
+    noHistory: 'No History Available',
+    clearCanvas: 'Clear Canvas',
+    colorPicker: 'HSV Color Picker',
+    exportImage: 'Export Image',
+    flipHorizontal: 'Flip Horizontal',
 
   },
 

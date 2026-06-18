@@ -6,6 +6,8 @@ import InspirationGenerator from './InspirationGenerator';
 
 import ColorPalette from './ColorPalette';
 
+import PixelCanvas from './PixelCanvas';
+
 import ImageBrowser from './ImageBrowser';
 
 import AdminPanel from './AdminPanel';
@@ -60,6 +62,8 @@ const NAV_TABS = [
   { id: 'inspiration', labelKey: 'inspiration' },
 
   { id: 'palette', labelKey: 'palette' },
+
+  { id: 'pixelCanvas', labelKey: 'pixelCanvas' },
 
   { id: 'station', labelKey: 'station' },
 
@@ -1067,6 +1071,18 @@ function App() {
       case 'palette':
 
         return <ColorPalette theme={isDarkMode ? 'dark' : 'light'} language={language} />;
+
+
+
+      // ── 像素畫布 ──────────────────────────────────────
+
+      case 'pixelCanvas':
+
+        return (
+          <div style={{ position: 'relative', width: '100%', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
+            <PixelCanvas t={t} isLight={isLight} currentTheme={currentTheme} />
+          </div>
+        );
 
 
 

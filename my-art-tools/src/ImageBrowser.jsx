@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import heartIcon from './img/like2.png';
 import heartActiveIcon from './img/like3.png';
+import pushpinIcon from './img/pushpin.png';
 import TRANSLATIONS from './translations';
 
 
@@ -926,55 +927,40 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
 
 
                                         {/*  釘選按鈕（右上） */}
-
                                         <button
-
                                             onClick={e => togglePin(item, e)}
-
                                             style={{
-
                                                 position: 'absolute',
-
                                                 top: '7px', right: '7px',
-
-                                                backgroundColor: isPinned ? '#2563eb' : 'rgba(0,0,0,0.6)',
-
-                                                color: '#fff',
-
+                                                backgroundColor: 'transparent',
                                                 border: 'none',
-
-                                                borderRadius: '50%',
-
+                                                borderRadius: 0,
                                                 width: '28px', height: '28px',
-
+                                                padding: 0,
                                                 display: 'flex',
-
                                                 alignItems: 'center',
-
                                                 justifyContent: 'center',
-
                                                 cursor: 'pointer',
-
-                                                fontSize: '0.85rem',
-
-                                                boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
-
+                                                boxShadow: 'none',
                                                 opacity: (isHov || isPinned) ? 1 : 0,
-
                                                 transition: 'all 0.2s ease',
-
                                                 zIndex: 4,
-
                                                 outline: 'none',
-
                                             }}
-
                                             title={isPinned ? t('cancelPin') : t('pinToCanvas')}
-
                                         >
-
-                                            
-
+                                            <img
+                                                src={pushpinIcon}
+                                                alt={isPinned ? t('cancelPin') : t('pinToCanvas')}
+                                                style={{
+                                                    width: '26px',
+                                                    height: '26px',
+                                                    display: 'block',
+                                                    filter: isPinned ? 'none' : 'grayscale(100%) opacity(0.6)',
+                                                    transform: isPinned ? 'scale(1.15) rotate(-15deg)' : 'scale(1) rotate(0deg)',
+                                                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                }}
+                                            />
                                         </button>
 
 
@@ -1753,6 +1739,15 @@ function ImageBrowser({ savedImages = [], toggleFavorite, theme = 'dark', langua
                                                 outline: 'none',
                                             }}
                                         >
+                                            <img
+                                                src={pushpinIcon}
+                                                alt="pin"
+                                                style={{
+                                                    width: '18px',
+                                                    height: '18px',
+                                                    filter: pinnedImages.some(p => p.id === activeImage.id) ? 'none' : 'grayscale(100%) brightness(1.2)'
+                                                }}
+                                            />
                                             {pinnedImages.some(p => p.id === activeImage.id) ? ' 取消釘選' : ' 釘選到對照畫布'}
                                         </button>
                                     </div>

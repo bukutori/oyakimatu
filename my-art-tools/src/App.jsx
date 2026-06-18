@@ -17,6 +17,9 @@ import sunIcon from './img/太陽.png';
 import moonIcon from './img/月と星.png';
 import heartIcon from './img/like2.png';
 import heartActiveIcon from './img/like3.png';
+import pushpinIcon from './img/pushpin.png';
+import bellIcon from './img/bell.png';
+import settingsIcon from './img/gear.png';
 
 import TRANSLATIONS from './translations';
 
@@ -1494,7 +1497,7 @@ function App() {
                     }}
                   >
                     <img
-                      src={unreadNotifCount > 0 ? heartActiveIcon : heartIcon}
+                      src={bellIcon}
                       alt={t('notifications')}
                       style={{ width: '26px', height: '26px' }}
                     />
@@ -1670,7 +1673,7 @@ function App() {
                   }}
                 >
                   <img
-                    src={heartIcon}
+                    src={settingsIcon}
                     alt={t('settings')}
                     style={{ width: '26px', height: '26px' }}
                   />
@@ -2263,7 +2266,7 @@ function App() {
 
               }}>
 
-                 {t('settings')}
+                {t('settings')}
 
               </h3>
 
@@ -2642,7 +2645,7 @@ function App() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '1rem',
               }}>
-                
+
               </div>
               <h4 style={{
                 margin: '0',
@@ -2902,7 +2905,7 @@ function FavoritesGallery({ savedImages, toggleFavorite, onZoom, onGoExplore, th
 
         }}>
 
-           我的收藏
+          我的收藏
 
           <span style={{
 
@@ -3260,7 +3263,7 @@ function FavoritesLightbox({ image, onClose, onUnfavorite }) {
 
         }}>
 
-           收藏大圖檢視
+          收藏大圖檢視
 
         </h4>
 
@@ -3316,7 +3319,7 @@ function FavoritesLightbox({ image, onClose, onUnfavorite }) {
 
           <span style={{ color: '#999', fontSize: '0.88rem' }}>
 
-{image.author}{image.isCustom ? '（自訂上傳）' : ''}
+            {image.author}{image.isCustom ? '（自訂上傳）' : ''}
 
           </span>
 
@@ -3360,7 +3363,7 @@ function FavoritesLightbox({ image, onClose, onUnfavorite }) {
 
           >
 
-             取消收藏
+            取消收藏
 
           </button>
 

@@ -1,4 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
+import pencilIcon from './img/pencil.png';
+import bucketIcon from './img/bucket.png';
+import eyeDropperIcon from './img/eyeDropper.png';
+import eraserIcon from './img/eraser.png';
+import rectIcon from './img/rect.png';
+import circleIcon from './img/circle.png';
+import selectMoveIcon from './img/selectMove.png';
+import gomibakoIcon from './img/gomibako.png';
 
 export default function PixelCanvas({ t, isLight, currentTheme }) {
   const [gridSize, setGridSize] = useState(16);
@@ -505,7 +513,8 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
     canvas: {
       display: 'grid', gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
       width: 'min(55vw, 70vh, 550px)', height: 'min(55vw, 70vh, 550px)', backgroundColor: '#fff', overflow: 'hidden',
-      borderRadius: '4px', boxShadow: '0 0 0 1px rgba(0,0,0,0.1)'
+      borderRadius: '4px', boxShadow: '0 0 0 1px rgba(0,0,0,0.1)',
+      touchAction: 'none'
     },
     pixel: (color) => ({ backgroundColor: color || 'transparent', cursor: 'crosshair' }),
     
@@ -541,26 +550,26 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
         <div style={styles.controlGroup}>
           <div style={styles.toolGrid}>
             <button onClick={() => { if(selectionData.current) commitSelectionMove(); setCurrentTool('pencil'); }} style={styles.toolBtn(currentTool === 'pencil')} title={safeT('pencil', '鉛筆')}>
-              <div style={styles.imagePlaceholder}>【圖】</div>
+              <img src={pencilIcon} alt="鉛筆" style={{ width: '42px', height: '42px' }} />
+            </button>
+             <button onClick={() => { if(selectionData.current) commitSelectionMove(); setCurrentTool('eraser'); }} style={styles.toolBtn(currentTool === 'eraser')} title={safeT('eraser', '橡皮擦')}>
+              <img src={eraserIcon} alt="橡皮擦" style={{ width: '38px', height: '38px' }} />
             </button>
             <button onClick={() => { if(selectionData.current) commitSelectionMove(); setCurrentTool('bucket'); }} style={styles.toolBtn(currentTool === 'bucket')} title={safeT('bucket', '油漆桶')}>
-              <div style={styles.imagePlaceholder}>【圖】</div>
+              <img src={bucketIcon} alt="油漆桶" style={{ width: '38px', height: '38px' }} />
             </button>
             <button onClick={() => { if(selectionData.current) commitSelectionMove(); setCurrentTool('eyeDropper'); }} style={styles.toolBtn(currentTool === 'eyeDropper')} title={safeT('eyeDropper', '吸管')}>
-              <div style={styles.imagePlaceholder}>【圖】</div>
+              <img src={eyeDropperIcon} alt="吸管" style={{ width: '38px', height: '38px' }} />
             </button>
-            <button onClick={() => { if(selectionData.current) commitSelectionMove(); setCurrentTool('eraser'); }} style={styles.toolBtn(currentTool === 'eraser')} title={safeT('eraser', '橡皮擦')}>
-              <div style={styles.imagePlaceholder}>【圖】</div>
-            </button>
-
+        
             <button onClick={() => { if(selectionData.current) commitSelectionMove(); setCurrentTool('rect'); }} style={styles.toolBtn(currentTool === 'rect')} title={safeT('rect', '正方形繪製')}>
-              <div style={styles.imagePlaceholder}>【圖】</div>
+              <img src={rectIcon} alt="矩形" style={{ width: '38px', height: '38px' }} />
             </button>
             <button onClick={() => { if(selectionData.current) commitSelectionMove(); setCurrentTool('circle'); }} style={styles.toolBtn(currentTool === 'circle')} title={safeT('circle', '圓形繪製')}>
-              <div style={styles.imagePlaceholder}>【圖】</div>
+              <img src={circleIcon} alt="圓形" style={{ width: '40px', height: '40px' }} />
             </button>
             <button onClick={() => setCurrentTool('selectMove')} style={styles.toolBtn(currentTool === 'selectMove')} title={safeT('selectMove', '圈選移動')}>
-              <div style={styles.imagePlaceholder}>【圖】</div>
+              <img src={selectMoveIcon} alt="圈選" style={{ width: '38px', height: '38px' }} />
             </button>
           </div>
 
@@ -590,7 +599,9 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
             ) : (
               <button style={styles.undoDisabledBtn} disabled title={safeT('noHistory', '目前無歷史紀錄')}>↩️</button>
             )}
-            <button onClick={clearCanvas} style={styles.actionBtn(true)} title={safeT('clearCanvas', '一鍵清空畫布')}>🗑️</button>
+            <button onClick={clearCanvas} style={styles.actionBtn(true)} title={safeT('clearCanvas', '一鍵清空畫布')}>
+              <img src={gomibakoIcon} alt="清空畫布" style={{ width: '24px', height: '24px' }} />
+            </button>
           </div>
         </div>
 

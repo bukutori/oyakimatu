@@ -23,8 +23,9 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
 
   const [history, setHistory] = useState([]);
   const isMouseDown = useRef(false);
-  const startCoord = useRef(null); 
-  const lastCoords = useRef(null); 
+  const startCoord = useRef(null);
+  const lastCoords = useRef(null);
+  const shapeBaseState = useRef(null); 
 
   // 圈選功能專用狀態
   const [selectRect, setSelectRect] = useState(null); 
@@ -35,6 +36,9 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
   // 調色盤 Canvas Ref
   const colorCanvasRef = useRef(null);
   const isColorMouseDown = useRef(false);
+
+  // 像素畫布 Ref
+  const pixelCanvasRef = useRef(null);
 
   // 安全的多語系包裝函式
   const safeT = (key, fallback) => (t ? t(key) : fallback);
@@ -213,8 +217,9 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
 
   const drawPixelOnArray = (arr, centerX, centerY, tool, color, size) => {
     const radius = size - 1;
-    for (let dy = 0; dy <= radius; dy++) {
-      for (let dx = 0; dx <= radius; dx++) {
+    const halfRadius = Math.floor(radius / 2);
+    for (let dy = -halfRadius; dy <= halfRadius; dy++) {
+      for (let dx = -halfRadius; dx <= halfRadius; dx++) {
         const targetX = centerX + dx;
         const targetY = centerY + dy;
         if (targetX >= 0 && targetX < gridSize && targetY >= 0 && targetY < gridSize) {
@@ -254,11 +259,14 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
     if (!startCoord.current) return;
     const x0 = startCoord.current.x;
     const y0 = startCoord.current.y;
-    const basePixels = [...history[history.length - 1]];
+
+    // Use the saved base state for shape preview, or current pixels for final
+    const basePixels = shapeBaseState.current ? [...shapeBaseState.current] : [...pixels];
 
     if (currentTool === 'rect') {
       const minX = Math.min(x0, x1); const maxX = Math.max(x0, x1);
       const minY = Math.min(y0, y1); const maxY = Math.max(y0, y1);
+      // Draw rectangle edges
       for (let x = minX; x <= maxX; x++) {
         drawPixelOnArray(basePixels, x, minY, 'pencil', currentColor, brushSize);
         drawPixelOnArray(basePixels, x, maxY, 'pencil', currentColor, brushSize);
@@ -269,17 +277,22 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
       }
     } else if (currentTool === 'circle') {
       const r = Math.sqrt(Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2));
+      // Use dynamic tolerance for better circle rendering
+      const tolerance = Math.max(0.6, r * 0.1);
       for (let y = 0; y < gridSize; y++) {
         for (let x = 0; x < gridSize; x++) {
           const dist = Math.sqrt(Math.pow(x - x0, 2) + Math.pow(y - y0, 2));
-          if (Math.abs(dist - r) < 0.6) {
+          if (Math.abs(dist - r) < tolerance) {
             drawPixelOnArray(basePixels, x, y, 'pencil', currentColor, brushSize);
           }
         }
       }
     }
     setPixels(basePixels);
-    if (isFinal) saveToHistory(basePixels);
+    if (isFinal) {
+      saveToHistory(basePixels);
+      shapeBaseState.current = null;
+    }
   };
 
   const commitSelectionMove = () => {
@@ -306,6 +319,11 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
     isMouseDown.current = true;
     startCoord.current = { x: c, y: r };
     lastCoords.current = { x: c, y: r };
+
+    // Save current state before starting shape drawing
+    if (currentTool === 'rect' || currentTool === 'circle') {
+      shapeBaseState.current = [...pixels];
+    }
 
     if (currentTool === 'selectMove') {
       const currentBoxX = selectRect ? selectRect.x + selectionOffset.x : -1;
@@ -338,6 +356,8 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
 
     if (currentTool === 'pencil' || currentTool === 'eraser' || currentTool === 'bucket') {
       drawLine(c, r, c, r);
+    } else if (currentTool === 'rect' || currentTool === 'circle') {
+      drawShape(c, r);
     }
   };
 
@@ -358,14 +378,14 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
         const cleanBase = [...history[history.length - 1]];
         for (let sy = 0; sy < selectRect.h; sy++) {
           for (let sx = 0; sx < selectRect.w; sx++) {
-            cleanBase[getIndex(selectRect.y + sy, selectRect.x + sx)] = ''; 
+            cleanBase[getIndex(selectRect.y + sy, selectRect.x + sx)] = '';
           }
         }
 
         let dataIdx = 0;
         for (let sy = 0; sy < selectRect.h; sy++) {
           for (let sx = 0; sx < selectRect.w; sx++) {
-            const tx = selectRect.x + newOffset.x + sx; 
+            const tx = selectRect.x + newOffset.x + sx;
             const ty = selectRect.y + newOffset.y + sy;
             if (tx >= 0 && tx < gridSize && ty >= 0 && ty < gridSize) {
               cleanBase[getIndex(ty, tx)] = selectionData.current[dataIdx];
@@ -375,7 +395,7 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
         }
         setSelectionOffset(newOffset);
         setPixels(cleanBase);
-        startCoord.current = { x: c, y: r }; 
+        startCoord.current = { x: c, y: r };
       } else if (!isMovingSelection && startCoord.current) {
         const x0 = startCoord.current.x; const y0 = startCoord.current.y;
         setSelectRect({ x: Math.min(x0, c), y: Math.min(y0, r), w: Math.abs(c - x0) + 1, h: Math.abs(r - y0) + 1 });
@@ -383,9 +403,12 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
       return;
     }
 
+    // Shape drawing is handled by global mouse move handler
     if (currentTool === 'rect' || currentTool === 'circle') {
-      drawShape(c, r);
-    } else if (lastCoords.current) {
+      return;
+    }
+
+    if (lastCoords.current) {
       drawLine(lastCoords.current.x, lastCoords.current.y, c, r);
       lastCoords.current = { x: c, y: r };
     }
@@ -395,6 +418,8 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
     if (!isMouseDown.current) return;
     if (currentTool === 'rect' || currentTool === 'circle') {
       if (lastCoords.current) drawShape(lastCoords.current.x, lastCoords.current.y, true);
+      else if (startCoord.current) drawShape(startCoord.current.x, startCoord.current.y, true);
+      saveToHistory(pixels);
     } else if (currentTool !== 'selectMove') {
       saveToHistory(pixels);
     }
@@ -513,10 +538,9 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
     canvas: {
       display: 'grid', gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
       width: 'min(55vw, 70vh, 550px)', height: 'min(55vw, 70vh, 550px)', backgroundColor: '#fff', overflow: 'hidden',
-      borderRadius: '4px', boxShadow: '0 0 0 1px rgba(0,0,0,0.1)',
-      touchAction: 'none'
+      borderRadius: '4px', boxShadow: '0 0 0 1px rgba(0,0,0,0.1)'
     },
-    pixel: (color) => ({ backgroundColor: color || 'transparent', cursor: 'crosshair' }),
+    pixel: (color) => ({ backgroundColor: color || 'transparent', cursor: 'crosshair', pointerEvents: currentTool === 'rect' || currentTool === 'circle' ? 'none' : 'auto' }),
     
     sideButtonGroup: { display: 'flex', flexDirection: 'column' },
     sideActionBtn: {
@@ -634,7 +658,48 @@ export default function PixelCanvas({ t, isLight, currentTheme }) {
         <div style={styles.canvasGroup}>
           
           <div style={styles.rightCanvasArea}>
-            <div style={styles.canvas}>
+            <div
+              ref={pixelCanvasRef}
+              style={styles.canvas}
+              onMouseDown={(e) => {
+                if (currentTool !== 'rect' && currentTool !== 'circle') return;
+
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const pixelSize = rect.width / gridSize;
+                const c = Math.floor(x / pixelSize);
+                const r = Math.floor(y / pixelSize);
+
+                if (c >= 0 && c < gridSize && r >= 0 && r < gridSize) {
+                  const index = getIndex(r, c);
+                  handlePixelMouseDown(index);
+                }
+              }}
+              onMouseMove={(e) => {
+                if (!isMouseDown.current || !startCoord.current) return;
+                if (currentTool !== 'rect' && currentTool !== 'circle') return;
+
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const pixelSize = rect.width / gridSize;
+                const c = Math.floor(x / pixelSize);
+                const r = Math.floor(y / pixelSize);
+
+                if (c >= 0 && c < gridSize && r >= 0 && r < gridSize) {
+                  drawShape(c, r);
+                  lastCoords.current = { x: c, y: r };
+                }
+              }}
+              onMouseUp={() => {
+                if (currentTool === 'rect' || currentTool === 'circle') {
+                  handlePixelMouseUp();
+                }
+              }}
+            >
               {pixels.map((color, index) => {
                 const r = Math.floor(index / gridSize);
                 const c = index % gridSize;

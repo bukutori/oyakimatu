@@ -708,7 +708,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                           left: '50%',
                           width: '100%',
                           height: '100%',
-                          objectFit: 'cover',
+                          objectFit: 'contain',
                           transform: `translate(calc(-50% + ${imageTransform.offsetX}%), calc(-50% + ${imageTransform.offsetY}%)) scale(${imageTransform.scale})`,
                           transition: 'transform 0.2s ease'
                         }}
@@ -1021,7 +1021,7 @@ const StationWall = ({ token, user, theme = 'dark', language = 'zh' }) => {
                         left: '50%',
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover',
+                        objectFit: 'contain',
                         transform: `translate(calc(-50% + ${post.imageOffsetX || 0}%), calc(-50% + ${post.imageOffsetY || 0}%)) scale(${post.imageScale || 1})`,
                         transition: 'transform 0.2s ease',
                         pointerEvents: 'none'
